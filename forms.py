@@ -2,36 +2,72 @@ import streamlit as st
 from app.components.utils import authenticate_user, add_user  # Updated import path to match utils.py location
 from navigation_buttons import home_button
 from database import save_user_to_db 
-
+from database import (
+    load_user_from_db,
+    load_renter_profile_from_db,
+    load_rental_preferences_from_db,
+    load_credit_scores_from_db,
+    load_landlord_recommendations_from_db,
+)
+from app.components.utils import verify_password  # Import the password verification function
 
 def login_form():
     """User login form."""
     # Back to Home Button
     home_button()
-    
+
     st.title("Log In")
     email = st.text_input("Email", key="login_email")
     password = st.text_input("Password", type="password", key="login_password")
-    
+
     if st.button("Log In", key="login_button"):
-        user = authenticate_user(email, password)
-        if user:
-            st.success(f"Welcome back, {user['username']}!")  # Use dictionary keys for user details
-            st.session_state["logged_in"] = True
-            st.session_state["user_id"] = user["id"]  # Store user_id
-            st.session_state["user"] = user["username"]
-            st.session_state["role"] = user["role"]
+        try:
+            # Fetch user data by email
+            user = load_user_from_db(email=email)
 
-            # Redirect to role-specific dashboard
-            if user["role"] == "Renter":
-                st.session_state["current_page"] = "dashboard"
-            elif user["role"] == "Landlord":
-                st.session_state["current_page"] = "dashboard"
-            elif user["role"] == "Agent":
-                st.session_state["current_page"] = "dashboard"
-        else:
-            st.error("Invalid email or password. Please try again.")
+            if user and verify_password(password, user["password_hash"]):  # Validate the password
+                # Successful login
+                st.success(f"Welcome back, {user['username']}!")
+                st.session_state["logged_in"] = True
+                st.session_state["user_id"] = user["id"]
+                st.session_state["user"] = user["username"]
+                st.session_state["role"] = user["role"]
 
+                # Load additional data for the renter
+                if user["role"] == "Renter":
+                    profile = load_renter_profile_from_db(user["id"])
+                    if profile:
+                        st.session_state.update(profile)
+
+                    preferences = load_rental_preferences_from_db(profile_id=profile["id"])
+                    if preferences:
+                        st.session_state.update(preferences)
+
+                    credit_score = load_credit_scores_from_db(profile_id=profile["id"])
+                    if credit_score:
+                        st.session_state.update(credit_score)
+
+                    landlord_recommendations = load_landlord_recommendations_from_db(renter_id=profile["id"])
+                    if landlord_recommendations:
+                        st.session_state["landlord_recommendations"] = landlord_recommendations
+
+                    # Redirect to the renter dashboard
+                    st.session_state["current_page"] = "dashboard"
+
+                elif user["role"] == "Landlord":
+                    # Landlord-specific loading logic can be added here
+                    st.session_state["current_page"] = "dashboard"
+
+                elif user["role"] == "Agent":
+                    # Agent-specific loading logic can be added here
+                    st.session_state["current_page"] = "dashboard"
+
+            else:
+                # Login failed
+                st.error("Invalid email or password. Please try again.")
+
+        except Exception as e:
+            st.error(f"An error occurred during login: {e}")
 
 def signup_form():
     """User signup form."""

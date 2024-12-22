@@ -3,11 +3,12 @@ import uuid
 from navigation_buttons import home_button, back_button 
 from credit_score.credit_score import income_credit_score
 # from recommendations.recommendation import recommendation_form
+from database import save_renter_profile_to_db, save_rental_preferences_to_db
 
 def create_renter_profile():
-    
     username = st.session_state.get("user", "User")
     email = st.session_state.get("email", "Email")
+    
     # Back to Home Button
     home_button()
     
@@ -59,45 +60,51 @@ def create_renter_profile():
         bio = st.text_area("Bio", placeholder="Write something about yourself...", key="new_profile_bio")
         hobbies = st.text_input("Hobbies & Interests (comma-separated)", key="new_profile_hobbies")
 
-    # Income and Credit Score
-    with st.expander("Income and Credit Score"):
-        income_credit_score()
-    
-    # Previous Landlord Recommendation
-    # with st.expander("Previous Landlord Recommendation"):
-    #     recommendation_form()
-        
     # Save profile button
     if st.button("Save Profile", key="save_new_profile"):
-        
-        # Save the profile data to session state
-        st.session_state["user"] = username
-        st.session_state["email"] = email
-        st.session_state["profile_pic"] = profile_pic
-        st.session_state["name"] = name
-        st.session_state["tagline"] = tagline
-        st.session_state["age"] = age
-        st.session_state["phone"] = phone
-        st.session_state["nationality"] = nationality
-        st.session_state["occupation"] = occupation
-        st.session_state["contract_type"] = contract_type
-        st.session_state["work_mode"] = work_mode
-        st.session_state["city"] = city
-        st.session_state["area"] = area
-        st.session_state["budget_min"] = budget_min
-        st.session_state["budget_max"] = budget_max
-        st.session_state["property_type"] = property_type
-        st.session_state["rooms"] = rooms
-        st.session_state["num_people"] = num_people
-        st.session_state["move_in_date"] = move_in_date
-        st.session_state["lease_duration"] = lease_duration
-        st.session_state["pets"] = pets
-        st.session_state["pet_type"] = pet_type
-        st.session_state["bio"] = bio
-        st.session_state["hobbies"] = hobbies
-        st.session_state["income"] = income
-        st.session_state["current_page"] = "dashboard"  # Redirect to the renter dashboard
-        
+        try:
+            # Save renter profile to database
+            profile_data = {
+                "profile_pic": profile_pic.read() if profile_pic else None,
+                "name": name,
+                "tagline": tagline,
+                "age": age,
+                "phone": phone,
+                "nationality": nationality,
+                "occupation": occupation,
+                "contract_type": contract_type,
+                "income": income,
+                "work_mode": work_mode,
+                "bio": bio,
+                "hobbies": hobbies
+            }
+            user_id = st.session_state["user_id"]
+            save_renter_profile_to_db(user_id, profile_data)
+
+            # Save rental preferences to database
+            preferences_data = {
+                "preferred_city": city,
+                "preferred_area": area,
+                "budget_min": budget_min,
+                "budget_max": budget_max,
+                "property_type": property_type,
+                "rooms_needed": rooms,
+                "number_of_people": num_people,
+                "move_in_date": move_in_date,
+                "lease_duration": lease_duration,
+                "pets": pets,
+                "pet_type": pet_type
+            }
+            profile_id = st.session_state["profile_id"]  # Ensure profile_id is stored during the renter profile save
+            save_rental_preferences_to_db(profile_id, preferences_data)
+
+            st.success("Profile and rental preferences saved successfully!")
+            st.session_state["current_page"] = "dashboard"  # Redirect to the renter dashboard
+
+        except Exception as e:
+            st.error(f"An error occurred while saving your profile: {e}")
+
 
 if __name__ == "__main__":
     create_renter_profile()
+
