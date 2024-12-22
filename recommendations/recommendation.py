@@ -46,6 +46,8 @@ def recommendation_form_page():
 def recommendation():
     
     back_button()
+    if "landlords" not in st.session_state:
+        st.session_state["landlords"] = []
     
     st.title("Send Forms to Previous Landlords")
 

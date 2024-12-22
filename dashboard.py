@@ -78,7 +78,10 @@ def dashboard():
             
             with col_yes:
                 if st.button("Yes", key="confirm_logout"):
-                    log_out_button()
+                    st.session_state.clear()
+                    st.session_state["current_page"] = "landing"
+                    st.success("You have been logged out.")
+                    st.rerun()
 
             with col_no:
                 if st.button("No", key="cancel_logout"):
