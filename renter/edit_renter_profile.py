@@ -3,6 +3,8 @@ import uuid
 from navigation_buttons import home_button, back_button 
 from renter.rental_preferences import rental_preferences
 from credit_score.credit_score import income_credit_score
+from main import save_profile_to_db
+
 # from recommendations.recommendation import recommendation_form
 
 def edit_renter_profile():
@@ -73,6 +75,9 @@ def edit_renter_profile():
         st.session_state["bio"] = bio
         st.session_state["hobbies"] = hobbies
         st.session_state["income"] = income
+        
+        save_profile_to_db()
+        
         st.success("Your renter profile has been created successfully!")
         st.session_state["current_page"] = "dashboard"
 

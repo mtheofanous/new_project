@@ -1,6 +1,7 @@
 import streamlit as st
 from app.components.utils import authenticate_user, add_user  # Updated import path to match utils.py location
 from navigation_buttons import home_button
+from database import save_user_to_db 
 
 
 def login_form():
@@ -53,26 +54,30 @@ def signup_form():
         elif not gbdr:
             st.error("You must agree to the Terms and Conditions.")
         else:
-            user_id = add_user(username, email, password, role)
-            if user_id:
-                st.success("Account created successfully.")
+            try:
+                # Save the user to the database
+                user_id = save_user_to_db(username, email, password, role)
+                
+                # Update session state
                 st.session_state["signed_up"] = True
-                st.session_state["user_id"] = user_id  # Store user_id
+                st.session_state["user_id"] = user_id
                 st.session_state["user"] = username
                 st.session_state["email"] = email
                 st.session_state["role"] = role
                 st.session_state["logged_in"] = True
 
-                # Redirect to role-specific profile creation
+                # Redirect to the appropriate profile creation page
                 if role == "Renter":
                     st.session_state["current_page"] = "create_renter_profile"
                 elif role == "Landlord":
                     st.session_state["current_page"] = "create_landlord_profile"
                 elif role == "Agent":
                     st.session_state["current_page"] = "create_agent_profile"
-            else:
-                st.error("Email already exists. Please try a different one.")
 
+                st.success("Account created successfully!")
+
+            except ValueError as e:
+                st.error(str(e))
 
 if __name__ == "__main__":
     st.sidebar.title("Navigation")

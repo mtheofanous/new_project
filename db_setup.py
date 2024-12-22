@@ -27,8 +27,11 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS renter_profiles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        profile_pic BLOB,
+        email TEXT NOT NULL,
         user_id INTEGER NOT NULL,
         name TEXT,
+        tagline TEXT,
         age INTEGER CHECK (age >= 18),
         phone TEXT,
         nationality TEXT,
@@ -36,6 +39,8 @@ def create_tables():
         contract_type TEXT,
         income REAL,
         work_mode TEXT,
+        bio TEXT,
+        hobbies TEXT,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     """)
