@@ -10,6 +10,7 @@ from database import (
     load_landlord_recommendations_from_db,
 )
 from app.components.utils import verify_password  # Import the password verification function
+from roles import assign_role_to_user
 
 def login_form():
     """User login form."""
@@ -32,6 +33,7 @@ def login_form():
                 st.session_state["user_id"] = user["id"]
                 st.session_state["user"] = user["username"]
                 st.session_state["role"] = user["role"]
+                st.session_state["email"] = user["email"]
 
                 # Load additional data for the renter
                 if user["role"] == "Renter":
@@ -53,6 +55,7 @@ def login_form():
 
                     # Redirect to the renter dashboard
                     st.session_state["current_page"] = "dashboard"
+                    st.rerun()
 
                 elif user["role"] == "Landlord":
                     # Landlord-specific loading logic can be added here
@@ -92,7 +95,10 @@ def signup_form():
         else:
             try:
                 # Save the user to the database
-                user_id = save_user_to_db(username, email, password, role)
+                user_id = save_user_to_db(username, email, password)
+                
+                # assign the selected role to the user
+                assign_role_to_user(user_id, role)
                 
                 # Update session state
                 st.session_state["signed_up"] = True

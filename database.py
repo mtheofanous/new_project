@@ -2,58 +2,77 @@ from db_setup import get_db_connection
 from app.components.utils import hash_password  # Assuming you have the hash_password function in utils.py
 import sqlite3
 
-def save_user_to_db(username, email, password, role):
+def save_user_to_db(username, email, password):
     """
-    Save a new user to the database during sign-up.
+    Save a new user to the database.
+    :param username: The user's username.
+    :param email: The user's email address.
+    :param password: The user's password.
+    :return: The ID of the newly created user.
+    
     """
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Hash the password for security
+    hashed_password = hash_password(password)
+
     try:
-        # Hash the user's password
-        password_hash = hash_password(password)
+        # Check if email already exists
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        if cursor.fetchone():
+            raise ValueError("Email already exists. Please use a different email.")
 
-        # Insert the new user into the users table
+        # Insert the new user
         cursor.execute("""
-        INSERT INTO users (username, email, password_hash, role)
-        VALUES (?, ?, ?, ?)
-        """, (username, email, password_hash, role))
+        INSERT INTO users (username, email, password_hash)
+        VALUES (?, ?, ?)
+        """, (username, email, hashed_password))
 
-        # Commit the changes
         conn.commit()
+        
+        return cursor.lastrowid  # Return the user ID of the new user
 
-        # Get the ID of the newly inserted user
-        user_id = cursor.lastrowid
-        return user_id  # Return the new user's ID
-
-    except sqlite3.IntegrityError:
-        # Handle duplicate email error
-        conn.rollback()
-        raise ValueError("A user with this email already exists. Please use a different email.")
+    except sqlite3.IntegrityError as e:
+        raise ValueError("A user with this email already exists.") from e
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error: {e}")
 
     finally:
         conn.close()
 
+
 # Save renter profile to the database
 def save_renter_profile_to_db(user_id, profile_data):
-    conn = get_db_connection()
+    """Save or update renter profile data."""
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     try:
         cursor.execute("""
-        INSERT INTO renter_profiles (profile_pic, user_id, name, email,tagline, age, phone, nationality, occupation, contract_type, income, work_mode, bio, hobbies)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO renter_profiles (
+            profile_pic, user_id, name, tagline, age, phone, nationality, occupation, contract_type,
+            income, work_mode, bio, hobbies, social_media
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
-            profile_pic=excluded.profile_pic, name=excluded.name, email=excluded.email,tagline=excluded.tagline, age=excluded.age,
-            phone=excluded.phone, nationality=excluded.nationality, occupation=excluded.occupation,
-            contract_type=excluded.contract_type, income=excluded.income, work_mode=excluded.work_mode,
-            bio=excluded.bio, hobbies=excluded.hobbies
+            profile_pic=excluded.profile_pic, 
+            name=excluded.name, 
+            tagline=excluded.tagline, 
+            age=excluded.age,
+            phone=excluded.phone, 
+            nationality=excluded.nationality, 
+            occupation=excluded.occupation,
+            contract_type=excluded.contract_type, 
+            income=excluded.income, 
+            work_mode=excluded.work_mode,
+            bio=excluded.bio, 
+            hobbies=excluded.hobbies,
+            social_media=excluded.social_media
         """, (
             profile_data.get("profile_pic"),
             user_id,
             profile_data.get("name"),
             profile_data.get("tagline"),
-            profile_data.get("email"),
             profile_data.get("age"),
             profile_data.get("phone"),
             profile_data.get("nationality"),
@@ -62,29 +81,49 @@ def save_renter_profile_to_db(user_id, profile_data):
             profile_data.get("income"),
             profile_data.get("work_mode"),
             profile_data.get("bio"),
-            profile_data.get("hobbies")
+            profile_data.get("hobbies"),
+            profile_data.get("social_media")
+            
         ))
 
         conn.commit()
+        # Fetch the profile_id of the inserted or updated row
+        cursor.execute("SELECT id FROM renter_profiles WHERE user_id = ?", (user_id,))
+        profile_id = cursor.fetchone()
+        if profile_id:
+            return profile_id[0]  # Return the profile_id
 
     finally:
         conn.close()
-        
-# Save rental preferences to the database
+    return None  # Return None if no profile ID is found
+
 def save_rental_preferences_to_db(profile_id, preferences_data):
+    """
+    Save or update rental preferences in the database.
+    :param profile_id: The profile ID associated with the rental preferences.
+    :param preferences_data: A dictionary containing the rental preferences.
+    """
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
         cursor.execute("""
-        INSERT INTO rental_preferences (profile_id, preferred_city, preferred_area, budget_min, budget_max, property_type, rooms_needed, number_of_people, move_in_date, lease_duration, pets, pet_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO rental_preferences (
+            profile_id, preferred_city, preferred_area, budget_min, budget_max, 
+            property_type, rooms_needed, number_of_people, move_in_date, 
+            pets, pet_type
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(profile_id) DO UPDATE SET
-            preferred_city=excluded.preferred_city, preferred_area=excluded.preferred_area,
-            budget_min=excluded.budget_min, budget_max=excluded.budget_max,
-            property_type=excluded.property_type, rooms_needed=excluded.rooms_needed,
-            number_of_people=excluded.number_of_people, move_in_date=excluded.move_in_date,
-            lease_duration=excluded.lease_duration, pets=excluded.pets, pet_type=excluded.pet_type
+            preferred_city = excluded.preferred_city, 
+            preferred_area = excluded.preferred_area,
+            budget_min = excluded.budget_min, 
+            budget_max = excluded.budget_max,
+            property_type = excluded.property_type, 
+            rooms_needed = excluded.rooms_needed,
+            number_of_people = excluded.number_of_people, 
+            move_in_date = excluded.move_in_date,
+            pets = excluded.pets, 
+            pet_type = excluded.pet_type
         """, (
             profile_id,
             preferences_data.get("preferred_city"),
@@ -95,15 +134,77 @@ def save_rental_preferences_to_db(profile_id, preferences_data):
             preferences_data.get("rooms_needed"),
             preferences_data.get("number_of_people"),
             preferences_data.get("move_in_date"),
-            preferences_data.get("lease_duration"),
             preferences_data.get("pets"),
             preferences_data.get("pet_type")
         ))
 
         conn.commit()
+        print("Rental preferences saved or updated successfully.")
+        
+
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while saving rental preferences: {e}")
 
     finally:
         conn.close()
+
+# # Save rental preferences to the database
+# def save_rental_preferences_to_db(profile_id, preferences_data):
+#     """
+#     Save or update rental preferences in the database.
+#     :param profile_id: The profile ID associated with the rental preferences.
+#     :param preferences_data: A dictionary containing the rental preferences.
+#     """
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
+
+#     try:
+#         # Execute the SQL query to insert or update rental preferences
+#         cursor.execute("""
+#         INSERT INTO rental_preferences (
+#             profile_id, preferred_city, preferred_area, budget_min, budget_max, 
+#             property_type, rooms_needed, number_of_people, move_in_date, lease_duration, 
+#             pets, pet_type
+#         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+#         ON CONFLICT(profile_id) DO UPDATE SET
+#             preferred_city = excluded.preferred_city, 
+#             preferred_area = excluded.preferred_area,
+#             budget_min = excluded.budget_min, 
+#             budget_max = excluded.budget_max,
+#             property_type = excluded.property_type, 
+#             rooms_needed = excluded.rooms_needed,
+#             number_of_people = excluded.number_of_people, 
+#             move_in_date = excluded.move_in_date,
+#             lease_duration = excluded.lease_duration, 
+#             pets = excluded.pets, 
+#             pet_type = excluded.pet_type
+#         """, (
+#             profile_id,
+#             preferences_data.get("preferred_city"),
+#             preferences_data.get("preferred_area"),
+#             preferences_data.get("budget_min"),
+#             preferences_data.get("budget_max"),
+#             preferences_data.get("property_type"),
+#             preferences_data.get("rooms_needed"),
+#             preferences_data.get("number_of_people"),
+#             preferences_data.get("move_in_date"),
+#             preferences_data.get("lease_duration"),
+#             preferences_data.get("pets"),
+#             preferences_data.get("pet_type")
+#         ))
+
+#         # Commit the transaction
+#         conn.commit()
+#         print("Rental preferences saved or updated successfully.")
+
+#     except sqlite3.Error as e:
+#         # Handle database errors gracefully
+#         raise ValueError(f"Database error while saving rental preferences: {e}")
+
+#     finally:
+#         # Ensure the connection is closed
+#         conn.close()
+
 
 # Save credit scores to the database
 def save_credit_scores_to_db(profile_id, credit_score_data):
@@ -151,7 +252,6 @@ def save_landlord_recommendations_to_db(renter_id, recommendations):
         conn.close()
 
 
-# Load user from the database
 def load_user_from_db(user_id=None, email=None):
     """
     Load a user by ID or email.
@@ -163,10 +263,14 @@ def load_user_from_db(user_id=None, email=None):
     cursor = conn.cursor()
 
     try:
-        if user_id:
-            cursor.execute("SELECT id, username, email, password_hash, role FROM users WHERE id = ?", (user_id,))
+        if user_id and email:
+            raise ValueError("Provide only one of user_id or email, not both.")
+        elif user_id:
+            query = "SELECT id, username, email, password_hash, role FROM users WHERE id = ?"
+            cursor.execute(query, (user_id,))
         elif email:
-            cursor.execute("SELECT id, username, email, password_hash, role FROM users WHERE email = ?", (email,))
+            query = "SELECT id, username, email, password_hash, role FROM users WHERE email = ?"
+            cursor.execute(query, (email,))
         else:
             raise ValueError("Either user_id or email must be provided.")
 
@@ -182,8 +286,12 @@ def load_user_from_db(user_id=None, email=None):
             }
         return None
 
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error: {e}")
+
     finally:
         conn.close()
+
 
 # Load renter profile from the database
 def load_renter_profile_from_db(user_id):

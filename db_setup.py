@@ -1,6 +1,6 @@
 import sqlite3
 
-DATABASE_PATH = "database.db"
+DATABASE_PATH = "database.db"  # Path to your SQLite database file
 
 def get_db_connection():
     """Create and return a connection to the SQLite database."""
@@ -9,7 +9,8 @@ def get_db_connection():
     return conn
 
 def create_tables():
-    conn = sqlite3.connect(DATABASE_PATH)
+    """Create all necessary tables if they don't exist."""
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     # Users Table
@@ -18,31 +19,55 @@ def create_tables():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
+        password_hash TEXT NOT NULL
+   
+    )
+    """)
+    # Roles Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS roles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         role TEXT NOT NULL
     )
     """)
+    
+    # User Roles Table (Junction Table)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_roles (
+        user_id INTEGER NOT NULL,
+        role_id INTEGER NOT NULL,
+        PRIMARY KEY (user_id, role_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+    )
+    """)
+                
 
     # Renter Profiles Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS renter_profiles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        profile_pic BLOB,
-        email TEXT NOT NULL,
-        user_id INTEGER NOT NULL,
-        name TEXT,
-        tagline TEXT,
-        age INTEGER CHECK (age >= 18),
-        phone TEXT,
-        nationality TEXT,
-        occupation TEXT,
-        contract_type TEXT,
-        income REAL,
-        work_mode TEXT,
-        bio TEXT,
-        hobbies TEXT,
+        user_id INTEGER NOT NULL UNIQUE,
+        profile_pic BLOB DEFAULT NULL,
+        name TEXT DEFAULT NULL,
+        tagline TEXT DEFAULT NULL,
+        age INTEGER CHECK (age >= 18) DEFAULT 18,
+        phone TEXT CHECK (phone GLOB '+[0-9]*' OR (phone GLOB '[0-9]*' AND length(phone) = 10)), 
+        nationality TEXT DEFAULT NULL,
+        occupation TEXT DEFAULT NULL,
+        contract_type TEXT DEFAULT NULL,
+        income REAL CHECK (income >= 0) DEFAULT 0,
+        work_mode TEXT DEFAULT NULL,
+        bio TEXT DEFAULT NULL,
+        hobbies TEXT DEFAULT NULL,
+        social_media TEXT DEFAULT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
+    """)
+    
+    # Add UNIQUE index to user_id if it doesn't exist 
+    cursor.execute("""
+    CREATE UNIQUE INDEX IF NOT EXISTS unique_user_id ON renter_profiles (user_id);
     """)
 
     # Rental Preferences Table
@@ -58,39 +83,66 @@ def create_tables():
         rooms_needed INTEGER,
         number_of_people INTEGER,
         move_in_date DATE,
-        lease_duration TEXT,
         pets BOOLEAN,
         pet_type TEXT,
         FOREIGN KEY (profile_id) REFERENCES renter_profiles(id) ON DELETE CASCADE
     )
     """)
 
-    # Credit Scores Table
+    # # Add UNIQUE index to profile_id if it doesn't exist
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS credit_scores (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        profile_id INTEGER NOT NULL,
-        credit_score_verified BOOLEAN DEFAULT FALSE,
-        uploaded_document BLOB,
-        FOREIGN KEY (profile_id) REFERENCES renter_profiles(id) ON DELETE CASCADE
-    )
-    """)
-
-    # Landlord Recommendations Table
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS landlord_recommendations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        renter_id INTEGER NOT NULL,
-        landlord_name TEXT,
-        landlord_email TEXT,
-        landlord_phone TEXT,
-        status TEXT DEFAULT 'Pending',
-        FOREIGN KEY (renter_id) REFERENCES renter_profiles(id) ON DELETE CASCADE
-    )
+    CREATE UNIQUE INDEX IF NOT EXISTS unique_profile_id ON rental_preferences (profile_id);
     """)
 
     conn.commit()
     conn.close()
+    print("All tables created successfully.")
 
 if __name__ == "__main__":
     create_tables()
+
+
+# # def reinitialize_database():
+# #     """Reinitialize the database by dropping and recreating all tables."""
+# #     drop_tables()
+# #     create_tables()
+    
+# def check_rental_preferences_schema():
+#     """
+#     Check the schema of the rental_preferences table and confirm if profile_id is UNIQUE.
+#     """
+#     conn = sqlite3.connect(DATABASE_PATH)
+#     cursor = conn.cursor()
+
+#     try:
+#         # Check the schema of the rental_preferences table
+#         cursor.execute("PRAGMA table_info(rental_preferences);")
+#         table_info = cursor.fetchall()
+
+#         print("Schema of rental_preferences table:")
+#         print("cid | Name           | Type      | NotNull | Default | PK")
+#         print("-------------------------------------------------------")
+#         for column in table_info:
+#             print(column)
+
+#         # Check for UNIQUE constraints or indexes
+#         cursor.execute("PRAGMA index_list(rental_preferences);")
+#         indexes = cursor.fetchall()
+
+#         print("\nIndexes on rental_preferences table:")
+#         print("Index Name      | Unique")
+#         print("----------------|--------")
+#         for index in indexes:
+#             print(f"{index[1]} | {'Yes' if index[2] else 'No'}")  # Access tuple elements by index
+
+#     except sqlite3.Error as e:
+#         print(f"Error checking schema: {e}")
+
+#     finally:
+#         conn.close()
+
+
+# if __name__ == "__main__":
+#     print("Reinitializing database...")
+#     check_rental_preferences_schema()
+

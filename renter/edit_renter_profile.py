@@ -15,14 +15,9 @@ def edit_renter_profile():
     
     # Handle profile picture upload
     uploaded_file = st.file_uploader("Upload Profile Picture", type=["jpg", "jpeg", "png"], key="new_profile_pic")
-    if uploaded_file:
-        st.session_state["profile_pic"] = uploaded_file.read()
-
-    # Display the profile picture if it exists in session state
-    if st.session_state.get("profile_pic"):
-        st.image(st.session_state["profile_pic"], caption="Current Profile Picture", width=150)
-    else:
-        st.info("No profile picture uploaded.")
+    profile_pic = uploaded_file.read() if uploaded_file else st.session_state.get("profile_pic")
+    if profile_pic:
+        st.image(profile_pic, caption="Current Profile Picture", width=150)
 
     username = st.text_input("Username", value=st.session_state.get("user", ""), key="new_profile_username")
     name = st.text_input("Full Name", value=st.session_state.get("name", ""), key="new_profile_name")
@@ -64,8 +59,7 @@ def edit_renter_profile():
         rooms = st.number_input("Number of Rooms Needed", min_value=1, step=1, value=st.session_state.get("rooms_needed", 1), key="new_profile_rooms")
         num_people = st.number_input("Number of People", min_value=1, step=1, value=st.session_state.get("number_of_people", 1), key="new_profile_people")
         move_in_date = st.date_input("Move-in Date", value=st.session_state.get("move_in_date", None), key="new_profile_move_in_date")
-        lease_duration = st.text_input("Lease Duration", value=st.session_state.get("lease_duration", ""), key="new_profile_lease_duration")
-        pets = st.radio("Do you have pets?", ["No", "Yes"], index=0 if st.session_state.get("pets") == "No" else 1, key="new_profile_pets")
+        pets = st.radio("Do you have pets?", ["No", "Yes"], index=False if st.session_state.get("pets") == "No" else True, key="new_profile_pets")
         pet_type = st.text_input("Pet Type (if any)", value=st.session_state.get("pet_type", ""), key="new_profile_pet_type")
 
     # About Me
@@ -78,9 +72,10 @@ def edit_renter_profile():
         try:
             # Save renter profile to database
             profile_data = {
-                "profile_pic": st.session_state.get("profile_pic"),
+                "profile_pic": uploaded_file.read() if uploaded_file else st.session_state.get("profile_pic"),
                 "name": name,
                 "tagline": tagline,
+                "email": email,
                 "age": age,
                 "phone": phone,
                 "nationality": nationality,
@@ -91,7 +86,11 @@ def edit_renter_profile():
                 "bio": bio,
                 "hobbies": hobbies
             }
-            save_renter_profile_to_db(st.session_state["user_id"], profile_data)
+            user_id = st.session_state["user_id"]
+            profile_id = save_renter_profile_to_db(user_id, profile_data)
+
+            # Store profile_id in session state
+            st.session_state["profile_id"] = profile_id
 
             # Save rental preferences to database
             preferences_data = {
@@ -103,17 +102,42 @@ def edit_renter_profile():
                 "rooms_needed": rooms,
                 "number_of_people": num_people,
                 "move_in_date": move_in_date,
-                "lease_duration": lease_duration,
                 "pets": pets,
                 "pet_type": pet_type
             }
-            save_rental_preferences_to_db(st.session_state["profile_id"], preferences_data)
-
+            save_rental_preferences_to_db(profile_id, preferences_data)
+            
+            # Update session state
+            st.session_state["profile_pic"] = profile_pic
+            st.session_state["name"] = name
+            st.session_state["tagline"] = tagline
+            st.session_state["email"] = email
+            st.session_state["age"] = age
+            st.session_state["phone"] = phone
+            st.session_state["nationality"] = nationality
+            st.session_state["occupation"] = occupation
+            st.session_state["contract_type"] = contract_type
+            st.session_state["income"] = income
+            st.session_state["work_mode"] = work_mode
+            st.session_state["bio"] = bio
+            st.session_state["hobbies"] = hobbies
+            st.session_state["preferred_city"] = city
+            st.session_state["preferred_area"] = area
+            st.session_state["budget_min"] = budget_min
+            st.session_state["budget_max"] = budget_max
+            st.session_state["property_type"] = property_type
+            st.session_state["rooms_needed"] = rooms
+            st.session_state["number_of_people"] = num_people
+            st.session_state["move_in_date"] = move_in_date
+            st.session_state["pets"] = pets
+            st.session_state["pet_type"] = pet_type
+            
             st.success("Your renter profile has been updated successfully!")
-            st.session_state["current_page"] = "dashboard"  # Redirect to dashboard
+            st.session_state["current_page"] = "dashboard"
 
         except Exception as e:
             st.error(f"An error occurred while updating your profile: {e}")
+
 
 
 if __name__ == "__main__":

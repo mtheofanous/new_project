@@ -40,7 +40,7 @@ def recommendation_form_page():
     utilities_payment = st.radio("Did the tenant pay utility bills on time?", ["Yes", "No"])
     property_condition = st.radio("Did the tenant maintain the property well?", ["Yes", "No"])
     noise_complaints = st.radio("Were there noise or behavioral complaints?", ["No", "Yes"])
-    would_recommend = st.radio("Would you recommend this tenant to other landlords?", ["Yes", "No"])
+    recommendation_rating = st.slider("How likely are you to recommend this tenant to other landlords?", 1, 9, 5)
     additional_comments = st.text_area("Additional Comments (Optional)")
 
 def recommendation():
@@ -56,11 +56,15 @@ def recommendation():
         landlord_name = st.text_input("Landlord's Full Name", placeholder="Jane Doe")
         landlord_email = st.text_input("Landlord's Email", placeholder="landlord@example.com")
         landlord_phone = st.text_input("Landlord's Phone Number", placeholder="+1234567890")
-        address = st.text_input("Address", placeholder="123 Main St, Los Angeles, CA")
+        address = st.text_input("Address", placeholder="Main St, Los Angeles")
+        number = st.text_input("Number", placeholder="123")
+        postal_code = st.text_input("Postal Code", placeholder="90001")
         city = st.text_input("City", placeholder="Los Angeles")
         submit_button = st.form_submit_button("Add Landlord")
         
         st.session_state["address"] = address
+        st.session_state["number"] = number
+        st.session_state["postal_code"] = postal_code
         st.session_state["city"] = city
         st.session_state["landlord_name"] = landlord_name
         st.session_state["landlord_email"] = landlord_email
@@ -78,6 +82,8 @@ def recommendation():
                     "email": landlord_email,
                     "phone": landlord_phone,
                     "address": address,
+                    "number": number,
+                    "postal_code": postal_code,
                     "city": city,
                 })
                 st.session_state["form_status"][landlord_id] = "Pending"

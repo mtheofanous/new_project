@@ -7,17 +7,18 @@ from PIL import Image
         
 def renter_summary_profile():
 
-    profile_pic = st.session_state.get("profile_pic", "")
+    profile_pic = st.session_state.get("profile_pic")
     name = st.session_state.get("name", "")
     tagline = st.session_state.get("tagline", "")
-    email = st.session_state.get("email", "")
-    phone = st.session_state.get("phone", "")
-    city = st.session_state.get("city", "")
-    area = st.session_state.get("area", "")
-    budget_min = st.session_state.get("budget_min", "")
-    budget_max = st.session_state.get("budget_max", "")
     credit_score_verified = st.session_state.get("credit_score_verified", "")
     recommendation_status = st.session_state.get("recommendation_status", "")
+    
+    # save the session state of the profile summary
+    st.session_state["profile_pic"] = profile_pic
+    st.session_state["name"] = name
+    st.session_state["tagline"] = tagline
+    st.session_state["credit_score_verified"] = credit_score_verified
+    st.session_state["recommendation_status"] = recommendation_status
     
     # Profile Summary
     
@@ -37,8 +38,5 @@ def renter_summary_profile():
 
         st.write(f"**Name:** {name}")
         st.write(f"**Tagline:** {tagline}")
-        if credit_score_verified == True:
-            st.markdown("**Credit Score verified ✅**")
-        elif credit_score_verified == False:
-            st.markdown("**Credit score not verified ❌**")
+        st.write(f"**Credit Score Status:** {credit_score_verified}")
         st.write(f"**Recommendation Status:** {recommendation_status}")
