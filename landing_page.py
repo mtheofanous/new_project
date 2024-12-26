@@ -3,6 +3,7 @@ from navigation_buttons import home_button
 
 def landing_page():
     # Back to Home Button
+    
     left_column, right_column = st.columns([2.5, 1])
     with left_column:
         home_button()
@@ -17,11 +18,12 @@ def landing_page():
         with signup_col:
             if st.button("Sign Up", key="signup_button"):
                 st.session_state["current_page"] = "signup"
-
+    st.write("---") # give a horizontal line to separate the login/sign-up section from the rest of the content
     # Page Title
-    st.title("Welcome to RentEasy!")
-    st.subheader("Connecting renters with landlords and real estate agents seamlessly.")
-
+    st.markdown("<h1 style='text-align: center; color: black;'>Welcome to RentEasy!</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: black;'>Connecting renters with landlords and real estate agents seamlessly.</h2>", unsafe_allow_html=True)
+    st.write("---") # give a horizontal line to separate the title from the content
+    
     # Platform Information
     st.write("""
     ### About RentEasy:

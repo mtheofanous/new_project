@@ -103,12 +103,20 @@ def dashboard():
                     st.session_state["logout_confirmation"] = False
                 
     # Load the user's roles
-    roles = get_user_roles(st.session_state["user_id"])
+    roles = get_user_roles(st.session_state.get("user_id", None))
+    
+    if not roles:
+        st.error("No roles found for the user. Please contact support.")
+        return
+
+    # Ensure the session state role is valid
+    if st.session_state["role"] not in roles:
+        st.warning("Your current role is invalid. Selecting the first available role.")
+        st.session_state["role"] = roles[0]
+    
     if len(roles) > 1:
-        st.write("You have multiple roles assigned to your account.")
-        st.write("Please select a role to proceed.")
-        selected_role = st.selectbox("Select Role", roles, key="role_selectbox",
-                                     index=roles.index(st.session_state["role"]) if "role" in st.session_state else 0)
+        selected_role = st.selectbox("#### **Select Role**", roles, key="role_selectbox",
+                                     index=roles.index(st.session_state["role"]))
         st.session_state["role"] = selected_role
     else:
         st.session_state["role"] = roles[0]

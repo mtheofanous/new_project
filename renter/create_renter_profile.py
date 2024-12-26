@@ -4,6 +4,8 @@ from navigation_buttons import home_button, back_button
 from credit_score.credit_score import credit_score
 # from recommendations.recommendation import recommendation_form
 from database import save_renter_profile_to_db, save_rental_preferences_to_db
+import datetime
+
 
 def create_renter_profile():
     
@@ -14,13 +16,22 @@ def create_renter_profile():
     name = st.text_input("Full Name")
     tagline = st.text_input("Tagline")
     age = st.number_input("Age", min_value=18, max_value=100, step=1)
+    
     phone = st.text_input("Phone Number")
+    
     if phone and (not phone.isdigit() or len(phone) != 10):
         st.error("Phone number must be 10 digits long and contain only numbers.")
     nationality = st.text_input("Nationality")
+    # Nationality without spaces and the first letter capitalized
+    nationality = nationality.replace(" ", "").capitalize()
     occupation = st.text_input("Occupation")
     contract_type = st.selectbox("Contract Type", ["Permanent", "Contract", "Freelancer", "Unemployed"])
     income = st.number_input("Monthly Net Income (€)", min_value=0, step=100)
+    # Ensure income is a positive number or zero and integer
+    if income < 0:
+        st.error("Income must be a positive number or zero.")
+    else:
+        income = int(income)
     work_mode = st.radio("Work Mode", ["Remote", "On-site", "Hybrid"])
     bio = st.text_area("Bio")
     hobbies = st.text_area("Hobbies")
@@ -29,11 +40,27 @@ def create_renter_profile():
     # Rental Preferences Inputs
     preferred_city = st.text_input("Preferred City")
     preferred_area = st.text_input("Preferred Area")
-    budget_min = st.number_input("Minimum Budget ($)", min_value=0, step=100)
-    budget_max = st.number_input("Maximum Budget ($)", min_value=0, step=100)
+    budget_min = st.number_input("Minimum Budget (€)", min_value=0, step=100)
+    # Ensure budget_min is a positive number or zero
+    if budget_min < 0:
+        st.error("Budget must be a positive number or zero.")
+    else:
+        budget_min = int(budget_min)
+    budget_max = st.number_input("Maximum Budget (€)", min_value=0, step=100)
+    # Ensure budget_max is a positive number or greater than budget_min
+    if budget_max < 0:
+        st.error("Budget must be a positive number or zero.")
+    elif budget_max < budget_min:
+        st.error("Maximum budget must be greater than or equal to the minimum budget.")
+    else:
+        budget_max = int(budget_max)
     property_type = st.selectbox("Property Type", ["Apartment", "House", "Shared Accommodation"])
     rooms_needed = st.number_input("Number of Rooms", min_value=1, step=1)
     move_in_date = st.date_input("Move-in Date")
+    today = datetime.date.today()  # Default to today's date
+    # ensure move_in_date is not in the past
+    if move_in_date and move_in_date < today:
+        st.error("Move-in date cannot be in the past.")
     pets = st.radio("Do you have pets?", ["No", "Yes"]) == "Yes"
     pet_type = st.text_input("Pet Type") if pets else None
     

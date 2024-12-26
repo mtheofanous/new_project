@@ -36,7 +36,7 @@ def edit_renter_profile():
             index=["Permanent", "Contract", "Freelancer", "Unemployed"].index(st.session_state.get("contract_type", "Permanent")),
             key="new_profile_contract"
         )
-        income = st.number_input("Monthly Income (€)", min_value=0, step=100, value=st.session_state.get("income", 0), key="new_profile_income")
+        income = st.number_input("Monthly Income (€)", min_value=0, step=100, value=(int(st.session_state.get("income", 0))), key="new_profile_income")
         work_mode = st.radio(
             "Work Mode",
             ["Remote", "On-site", "Hybrid"],
@@ -48,8 +48,8 @@ def edit_renter_profile():
     with st.expander("Rental Preferences"):
         city = st.text_input("Preferred City", value=st.session_state.get("preferred_city", ""), key="new_profile_city")
         area = st.text_input("Preferred Area", value=st.session_state.get("preferred_area", ""), key="new_profile_area")
-        budget_min = st.number_input("Minimum Budget (€)", min_value=0, step=100, value=st.session_state.get("budget_min", 0), key="new_profile_budget_min")
-        budget_max = st.number_input("Maximum Budget (€)", min_value=0, step=100, value=st.session_state.get("budget_max", 0), key="new_profile_budget_max")
+        budget_min = st.number_input("Minimum Budget (€)", min_value=0, step=100, value=int(st.session_state.get("budget_min", 0)), key="new_profile_budget_min")
+        budget_max = st.number_input("Maximum Budget (€)", min_value=0, step=100, value=int(st.session_state.get("budget_max", 0)), key="new_profile_budget_max")
         property_type = st.selectbox(
             "Property Type",
             ["Apartment", "House", "Shared Accommodation"],
@@ -70,6 +70,14 @@ def edit_renter_profile():
     # Save profile button
     if st.button("Save Profile", key="save_edit_profile"):
         try:
+            # Read uploaded file content or fallback to session state
+            profile_pic_data = (
+            uploaded_file.read() if uploaded_file else st.session_state.get("profile_pic")
+            )
+
+            # Ensure uploaded_file.read() is not called multiple times
+            if uploaded_file:
+                profile_pic_data = profile_pic_data.decode("utf-8")  # Optional: Handle encoding if needed
             # Save renter profile to database
             profile_data = {
                 "profile_pic": uploaded_file.read() if uploaded_file else st.session_state.get("profile_pic"),

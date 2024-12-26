@@ -6,71 +6,112 @@ from database import (
     load_user_from_db,
     load_renter_profile_from_db,
     load_rental_preferences_from_db,
-    load_credit_scores_from_db,
-    load_landlord_recommendations_from_db,
+    load_credit_scores,
 )
 from app.components.utils import verify_password  # Import the password verification function
-from roles import assign_role_to_user
+from roles import assign_role_to_user, get_user_roles
 
+            
 def login_form():
     """User login form."""
     # Back to Home Button
     home_button()
-
+    
+    
     st.title("Log In")
+    
+    
     email = st.text_input("Email", key="login_email")
     password = st.text_input("Password", type="password", key="login_password")
+    
 
     if st.button("Log In", key="login_button"):
+        
         try:
-            # Fetch user data by email
-            user = load_user_from_db(email=email)
+            
+            if email.strip():
+                user = load_user_from_db(email=email)
+            else:
+                st.error("Please enter a valid email address.")
+                return
+                        
+            if not user:
+                st.error("User not found. Please check your email or sign up.")
+                return
+            
+            if not verify_password(password, user["password_hash"]):
+                st.error("Invalid password. Please try again.")
+                return
+            
+            # Successful login
+            st.success(f"Welcome back, {user['username']}!")
+            roles = get_user_roles(user["id"])
+            
+            st.session_state["logged_in"] = True
+            st.session_state["user_id"] = user["id"]
+            st.session_state["user"] = user["username"]
+            st.session_state["email"] = user["email"]
 
-            if user and verify_password(password, user["password_hash"]):  # Validate the password
-                # Successful login
-                st.success(f"Welcome back, {user['username']}!")
-                st.session_state["logged_in"] = True
+            if roles[0] == "Renter":
+                
                 st.session_state["user_id"] = user["id"]
                 st.session_state["user"] = user["username"]
-                st.session_state["role"] = user["role"]
+                st.session_state["role"] = roles
+                st.session_state["email"] = user["email"]
+                
+                profile = load_renter_profile_from_db(user["id"])
+                if profile:
+                    st.session_state["profile_pic"] = profile["profile_pic"]
+                    st.session_state["name"] = profile["name"]
+                    st.session_state["tagline"] = profile["tagline"]
+                    st.session_state["age"] = profile["age"]
+                    st.session_state["phone"] = profile["phone"]
+                    st.session_state["nationality"] = profile["nationality"]
+                    st.session_state["occupation"] = profile["occupation"]
+                    st.session_state["contract_type"] = profile["contract_type"]
+                    st.session_state["income"] = profile["income"]
+                    st.session_state["work_mode"] = profile["work_mode"]
+                    st.session_state["bio"] = profile["bio"]
+                    st.session_state["hobbies"] = profile["hobbies"]
+
+                preferences = load_rental_preferences_from_db(profile_id=profile["id"])
+                if preferences:
+                    st.session_state["preferred_city"] = preferences['preferred_city']
+                    st.session_state["preferred_area"] = preferences['preferred_area']
+                    st.session_state["budget_min"] = preferences['budget_min']
+                    st.session_state["budget_max"] = preferences['budget_max']
+                    st.session_state["property_type"] = preferences['property_type']
+                    st.session_state["rooms_needed"] = preferences['rooms_needed']
+                    st.session_state["move_in_date"] = preferences['move_in_date']
+                    st.session_state["pets"] = preferences['pets']
+                    st.session_state["pet_type"] = preferences['pet_type']
+
+                credit_score_status = load_credit_scores(user["id"])
+                if credit_score_status:
+                    st.session_state["status"] = credit_score_status["status"]
+
+                st.session_state["current_page"] = "dashboard"
+                st.rerun()
+
+            elif roles[0] == "Landlord":
+                st.session_state["current_page"] = "dashboard"
+                
+                st.session_state["user_id"] = user["id"]
+                st.session_state["user"] = user["username"]
+                st.session_state["role"] = roles
                 st.session_state["email"] = user["email"]
 
-                # Load additional data for the renter
-                if user["role"] == "Renter":
-                    profile = load_renter_profile_from_db(user["id"])
-                    if profile:
-                        st.session_state.update(profile)
-
-                    preferences = load_rental_preferences_from_db(profile_id=profile["id"])
-                    if preferences:
-                        st.session_state.update(preferences)
-
-                    credit_score = load_credit_scores_from_db(profile_id=profile["id"])
-                    if credit_score:
-                        st.session_state.update(credit_score)
-
-                    landlord_recommendations = load_landlord_recommendations_from_db(renter_id=profile["id"])
-                    if landlord_recommendations:
-                        st.session_state["landlord_recommendations"] = landlord_recommendations
-
-                    # Redirect to the renter dashboard
-                    st.session_state["current_page"] = "dashboard"
-                    st.rerun()
-
-                elif user["role"] == "Landlord":
-                    # Landlord-specific loading logic can be added here
-                    st.session_state["current_page"] = "dashboard"
-
-                elif user["role"] == "Agent":
-                    # Agent-specific loading logic can be added here
-                    st.session_state["current_page"] = "dashboard"
-
-            else:
-                # Login failed
-                st.error("Invalid email or password. Please try again.")
+            elif roles[0] == "Agent":
+                st.session_state["current_page"] = "dashboard"
+                
+                st.session_state["user_id"] = user["id"]
+                st.session_state["user"] = user["username"]
+                st.session_state["role"] = roles
+                st.session_state["email"] = user["email"]
 
         except Exception as e:
             st.error(f"An error occurred during login: {e}")
+
 
 def signup_form():
     """User signup form."""
@@ -84,6 +125,9 @@ def signup_form():
     confirm_password = st.text_input("Confirm Password", type="password", key="signup_confirm_password")
     role = st.selectbox("Role", ["Renter", "Landlord", "Agent"], key="signup_role")
     gbdr = st.checkbox("I agree to the Terms and Conditions", key="signup_gbdr")
+    
+    # ensure that email has no spaces and is small caps
+    email = email.strip().lower()
 
     if st.button("Sign Up", key="signup_button"):
         if password != confirm_password:

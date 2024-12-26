@@ -18,12 +18,12 @@ def profile_settings():
     user = load_user_from_db(user_id=user_id)
 
     # Display user profile settings
-    st.markdown(f"##### **Username:** {user['username']}")
-    st.markdown(f"##### **Email:** {user['email']}")
+    st.markdown(f"Username: {user['username']}")
+    st.markdown(f"Email: {user['email']}")
     
     # Display user roles
     roles = get_user_roles(user_id)
-    st.markdown(f"##### **Roles:** {', '.join(roles)}")
+    st.markdown(f"Roles: {', '.join(roles)}")
     
     # Change Password
     with st.expander("Change Password"):

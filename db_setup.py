@@ -94,13 +94,15 @@ def create_tables():
     CREATE UNIQUE INDEX IF NOT EXISTS unique_profile_id ON rental_preferences (profile_id);
     """)
     
-     # Renter Credit Score Table
+    # Updated Renter Credit Score Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS renter_credit_scores (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         status TEXT CHECK (status IN ('Not Verified', 'Pending', 'Verified')) DEFAULT 'Not Verified',
+        authorized BOOLEAN DEFAULT 0, -- 0 for False, 1 for True
+        uploaded_file BOOLEAN DEFAULT 0, -- 0 for False, 1 for True
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     """)
@@ -108,6 +110,7 @@ def create_tables():
     conn.commit()
     conn.close()
     print("All tables created successfully.")
+
 
 if __name__ == "__main__":
     create_tables()

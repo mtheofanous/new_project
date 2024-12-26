@@ -7,6 +7,7 @@ from renter.create_renter_profile import create_renter_profile
 from renter.edit_renter_profile import edit_renter_profile
 from renter.renter_summary_profile import renter_summary_profile
 from renter.renter_full_profile import renter_full_profile
+from agent.create_agent_profile import create_agent_profile
 from dashboard import dashboard
 from recommendations.recommendation import recommendation
 from credit_score.credit_score import credit_score
@@ -45,6 +46,8 @@ def main():
         credit_score()
     elif st.session_state["current_page"] == "profile_settings":
         profile_settings()
+    elif st.session_state["current_page"] == "create_agent_profile":
+        create_agent_profile()
 
 
 if __name__ == "__main__":
