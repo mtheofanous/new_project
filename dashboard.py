@@ -6,6 +6,7 @@ from PIL import Image
 from renter.renter_summary_profile import renter_summary_profile
 from renter.renter_full_profile import renter_full_profile
 from renter.edit_renter_profile import edit_renter_profile
+from agent.agent_summary_profile import agent_summary_profile
 from recommendations.recommendation import recommendation
 from credit_score.credit_score import credit_score
 from settings import profile_settings
@@ -49,6 +50,42 @@ def renter_dashboard():
                 st.success(f"Your interest in {property['name']} has been sent to the landlord.")
             st.markdown("---")
 
+# agent_dashboard() elements(summary_profile, full_profile, edit_profile, listing, client_reviews, settings)         
+def agent_dashboard():
+    st.title("Agent Dashboard")
+    st.write("Welcome to your dashboard! Here you can manage your profile, view listings, and interact with clients.")
+    agent_summary_profile()
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        if st.button("Manage Listings", key="listing_button"):
+                    st.session_state["current_page"] = "listing"
+                    
+    with col2:
+        if st.button("Manage Client Reviews", key="client_reviews_button"):
+                    st.session_state["current_page"] = "client_reviews"
+                    
+    # show the listings of the agent
+    with st.expander("Your Listings"):
+        st.write("Here are the properties you have listed:")
+        # Sample properties (In a real scenario, fetch from a database)
+        properties = [
+            {"name": "Downtown Apartment", "price": 1200, "location": "Los Angeles, Downtown", "rooms": 2},
+            {"name": "Cozy Studio", "price": 900, "location": "Los Angeles, Westwood", "rooms": 1},
+            {"name": "Spacious Family Home", "price": 2500, "location": "Los Angeles, Beverly Hills", "rooms": 4}
+        ]
+
+        for property in properties:
+            st.write(f"**Name:** {property['name']}")
+            st.write(f"**Price:** ${property['price']} per month")
+            st.write(f"**Location:** {property['location']}")
+            st.write(f"**Rooms:** {property['rooms']}")
+            if st.button(f"View Details for {property['name']}", key=f"view_{property['name']}"):
+                st.info(f"Details for {property['name']} are not yet implemented.")
+            if st.button(f"View Client Reviews for {property['name']}", key=f"reviews_{property['name']}"):
+                st.info(f"Client reviews for {property['name']} are not yet implemented.")
+            st.markdown("---")
 def dashboard():
     # Ensure session state is initialized
     if "role" not in st.session_state:

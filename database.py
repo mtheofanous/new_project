@@ -205,6 +205,7 @@ def save_rental_preferences_to_db(profile_id, preferences_data):
         
 # Load rental preferences from the database
 
+
 def load_rental_preferences_from_db(profile_id):
     """
     Load rental preferences for a specific profile ID.
@@ -311,95 +312,74 @@ def load_credit_scores(user_id=None):
         print(f"Error loading credit scores: {e}")
         return None if user_id else []
 
-# Save landlord recommendations to the database
-def save_landlord_recommendations_to_db(renter_id, recommendations):
+# Save agent profile to the database
+def save_agent_profile_to_db(user_id, profile_data):
+    """Save or update agent profile data."""
     conn = get_db_connection()
     cursor = conn.cursor()
-
     try:
-        for recommendation in recommendations:
-            cursor.execute("""
-            INSERT INTO landlord_recommendations (renter_id, landlord_name, landlord_email, landlord_phone, status)
-            VALUES (?, ?, ?, ?, ?)
-            """, (
-                renter_id,
-                recommendation.get("landlord_name"),
-                recommendation.get("landlord_email"),
-                recommendation.get("landlord_phone"),
-                recommendation.get("status")
-            ))
-
+        cursor.execute("""
+        INSERT INTO agent_profiles (
+            agent_profile_pic, user_id, name, phone, agency_name, agency_address,
+            agency_website, social_media, working_days, working_hours, preferred_communication, 
+            services, languages, mission_statement
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            agent_profile_pic=excluded.agent_profile_pic, 
+            name=excluded.name, 
+            phone=excluded.phone, 
+            agency_name=excluded.agency_name,
+            agency_address=excluded.agency_address,
+            agency_website=excluded.agency_website,
+            social_media=excluded.social_media,
+            working_days=excluded.working_days,
+            working_hours=excluded.working_hours,
+            preferred_communication=excluded.preferred_communication,
+            services=excluded.services,
+            languages=excluded.languages,
+            mission_statement=excluded.mission_statement
+        """, (
+            profile_data.get("agent_profile_pic"),
+            user_id,
+            profile_data.get("name"),
+            profile_data.get("phone"),
+            profile_data.get("agency_name"),
+            profile_data.get("agency_address"),
+            profile_data.get("agency_website"),
+            profile_data.get("social_media"),
+            profile_data.get("working_days"),
+            profile_data.get("working_hours"),
+            profile_data.get("preferred_communication"),
+            profile_data.get("services"),
+            profile_data.get("languages"),
+            profile_data.get("mission_statement"),
+        ))
+        
         conn.commit()
-
+        
+        # Fetch the profile_id of the inserted or updated row
+        cursor.execute("SELECT id FROM agent_profiles WHERE user_id = ?", (user_id,))
+        agent_profile_id = cursor.fetchone()
+        if agent_profile_id:
+            return agent_profile_id[0]  # Return the agent_profile_id
+        
     finally:
         conn.close()
-        
+    return None  # Return None if no agent profile ID is found
 
-
-
-
-
-
-
-        
-# Load credit scores from the database
-
-def load_credit_scores_from_db(profile_id):
-    """
-    Load credit score information for a specific profile ID.
-    :param profile_id: The ID of the renter profile.
-    :return: A dictionary containing credit score details, or None if not found.
-    """
+# Load agent profile from the database
+def load_agent_profile_from_db(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
         cursor.execute("""
-        SELECT credit_score_verified, uploaded_document
-        FROM credit_scores WHERE profile_id = ?
-        """, (profile_id,))
-        credit_score = cursor.fetchone()
-
-        if credit_score:
-            return {
-                "credit_score_verified": credit_score["credit_score_verified"],
-                "uploaded_document": credit_score["uploaded_document"]
-            }
-        return None
+        SELECT id, agent_profile_pic, name, phone, agency_name, agency_address, agency_website,
+        social_media, working_days, working_hours, preferred_communication, 
+        services, languages, mission_statement
+        FROM agent_profiles WHERE user_id = ?
+        """, (user_id,))
+        return cursor.fetchone()
 
     finally:
         conn.close()
-
-
-# Load landlord recommendations from the database
-def load_landlord_recommendations_from_db(renter_id):
-    """
-    Load all landlord recommendations for a specific renter ID.
-    :param renter_id: The ID of the renter profile.
-    :return: A list of dictionaries containing landlord recommendations.
-    """
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute("""
-        SELECT landlord_name, landlord_email, landlord_phone, status
-        FROM landlord_recommendations WHERE renter_id = ?
-        """, (renter_id,))
-        recommendations = cursor.fetchall()
-
-        return [
-            {
-                "landlord_name": recommendation["landlord_name"],
-                "landlord_email": recommendation["landlord_email"],
-                "landlord_phone": recommendation["landlord_phone"],
-                "status": recommendation["status"]
-            }
-            for recommendation in recommendations
-        ]
-
-    finally:
-        conn.close()
-
-
-

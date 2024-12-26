@@ -1,95 +1,60 @@
 import streamlit as st
 from navigation_buttons import home_button 
+import overpy
+from database import load_user_from_db, save_agent_profile_to_db
 
 def create_agent_profile():
-    
     home_button()
-    
+
     st.title("Create Rental Agent Profile")
 
-    # Collect agent's profile information
-    with st.expander("Add Profile Information"):
-        # Personal details
-        name = st.text_input("Enter agent's full name:")
-        phone = st.text_input("Enter agent's phone number:")
-        profile_pic = st.text_input("Enter path or URL to agent's profile photo:")
-        license_number = st.text_input("Enter agent's license number:")
-        agency_name = st.text_input("Enter agency name:")
-        agency_website = st.text_input("Enter agency website:")
-        working_days = st.multiselect("Select working days:", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
-        working_hours = st.slider("Select working hours:", 0, 24, (9, 17), format="%d:00")
-        preferred_communication = st.multiselect("Select preferred communication methods:", ["Phone", "Email", "Text", "In-person"])
+    # Collect agent's basic profile information
+    with st.expander("Basic Information"):
+        name = st.text_input("Full Name:")
+        phone = st.text_input("Phone Number:")
+        agent_profile_pic = st.file_uploader("Upload Profile Picture", type=["jpg", "jpeg", "png"], key="create_agent_profile_pic")
+        agency_name = st.text_input("Agency Name:")
+        agency_address = st.text_input("Agency Address:")
+        agency_website = st.text_input("Agency Website (optional):")
+        social_media = st.text_input("Social Media Link (optional):")
 
-    with st.expander("Portfolio Information"):
-        # Portfolio details
-        service_area = st.text_area("Enter service areas (comma-separated):").split(',')
-        neighborhood_specialties = st.text_area("Enter neighborhood specialties (comma-separated):").split(',')
-        current_listings = st.text_area("Enter URLs for current rental listings (comma-separated):").split(',')
+    with st.expander("Work Details"):
+        working_days = st.multiselect("Working Days:", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], default=["Monday", "Friday"])
+        working_hours = st.slider("Working Hours:", 0, 24, (9, 17), format="%d:00")
+        preferred_communication = st.multiselect("Preferred Communication Methods:", ["Phone", "Email", "Text", "In-person"], default=["Phone", "Email"])
 
-    with st.expander("Add Professional Information"):
-        # Professional details
-        experience_years = st.number_input("Enter years of experience in rental properties:", min_value=0, step=1)
-        services_offered = {
-            "tenant_matching": st.checkbox("Offer tenant matching?"),
-            "landlord_support": st.checkbox("Offer landlord support?"),
-            "lease_management": st.checkbox("Offer lease management?"),
-            "market_analysis": st.checkbox("Offer market analysis?")
-        }
-        languages = st.text_area("Enter languages spoken (comma-separated):").split(',')
-        specializations = st.text_area("Enter specializations (comma-separated):").split(',')
-        certifications = st.text_area("Enter certifications (comma-separated):").split(',')
-        negotiation_skills = st.text_input("Enter negotiation skills level (e.g., Expert, Intermediate):")
-        advertising_strategies = st.text_area("Enter advertising strategies (comma-separated):").split(',')
-        professional_network = st.text_area("Enter professional network connections (comma-separated):").split(',')
-        tech_skills = st.text_area("Enter tech skills (comma-separated):").split(',')
-        
+    with st.expander("Professional Background"):
+        services = st.multiselect("Services Offered:", ["Tenant Matching", "Landlord Support", "Lease Management", "Market Analysis"], default=["Tenant Matching"])
+        languages = st.multiselect("Languages Spoken:", ["English", "Greek", "Italian","Spanish", "French", "Russian","Mandarin", "Arabic"], default=["English"])
+
     with st.expander("Additional Information"):
-
-        # Additional information
-        achievements = st.text_area("Enter achievements (comma-separated):").split(',')
-        mission_statement = st.text_area("Enter mission statement:")
-        hobbies = st.text_area("Enter hobbies/interests (comma-separated):").split(',')
+        mission_statement = st.text_area("Mission Statement (optional):")
 
     if st.button("Save Profile"):
         # Build the profile dictionary
         agent_profile = {
             "name": name,
             "phone": phone,
-            "profile_pic": profile_pic,
-            "license_number": license_number,
+            "agent_profile_pic": agent_profile_pic.read() if agent_profile_pic else None,
             "agency_name": agency_name,
+            "agency_address": agency_address,
             "agency_website": agency_website,
+            "social_media": social_media,
             "working_days": working_days,
             "working_hours": working_hours,
-            "preferred_communication": preferred_communication
-            
-            }
-        agent_skills = {
-            "experience_years": experience_years,
-            "services_offered": services_offered,
-            "specializations": specializations,
-            "certifications": certifications,
+            "preferred_communication": preferred_communication,
+            "services": services,
             "languages": languages,
-            "advertising_strategies": advertising_strategies,
-            "professional_network": professional_network,
-            "negotiation_skills": negotiation_skills,
-            "tech_skills": tech_skills
-            },
-        agent_portfolio = {
-                "service_area": service_area,
-                "neighborhood_specialties": neighborhood_specialties,
-                "current_listings": current_listings,
-            },
+            "mission_statement": mission_statement.strip()
+        }
 
-        additional_info = {
-                "achievements": achievements,
-                "mission_statement": mission_statement,
-                "hobbies": hobbies
-            }
-        # Save agent profile to database
-        # save_agent_profile_to_db(agent_profile, agent_skills, agent_portfolio, additional_info)
+        # Save the profile to the database
+        user_id = st.session_state.get("user_id")
+        save_agent_profile_to_db(user_id, agent_profile)
         
-
+        st.success("Profile saved successfully!")
+        st.session_state["current_page"] = "dashboard"
+        
 
 if __name__ == "__main__":
     create_agent_profile()

@@ -69,7 +69,35 @@ def create_tables():
     cursor.execute("""
     CREATE UNIQUE INDEX IF NOT EXISTS unique_user_id ON renter_profiles (user_id);
     """)
-
+    
+    # Agent Profiles Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS agent_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL UNIQUE,
+        agent_profile_pic BLOB DEFAULT NULL,
+        name TEXT DEFAULT NULL,
+        phone TEXT CHECK (phone GLOB '+[0-9]*' OR (phone GLOB '[0-9]*' AND length(phone) = 10)),
+        agency_name TEXT DEFAULT NULL,
+        agency_address TEXT DEFAULT NULL,
+        agency_website TEXT DEFAULT NULL,
+        social_media TEXT DEFAULT NULL,
+        working_days TEXT DEFAULT NULL,
+        working_hours TEXT DEFAULT NULL,
+        preferred_communication TEXT DEFAULT NULL,
+        services TEXT DEFAULT NULL,     
+        languages TEXT DEFAULT NULL,
+        mission_statement TEXT DEFAULT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE   
+    )
+    """)
+    
+    # Add UNIQUE index to user_id if it doesn't exist
+    cursor.execute("""
+    CREATE UNIQUE INDEX IF NOT EXISTS unique_user_id ON agent_profiles (user_id);
+    """)
+        
+    
     # Rental Preferences Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS rental_preferences (
@@ -110,6 +138,7 @@ def create_tables():
     conn.commit()
     conn.close()
     print("All tables created successfully.")
+    
 
 
 if __name__ == "__main__":
