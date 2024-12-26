@@ -10,7 +10,7 @@ def renter_summary_profile():
     profile_pic = st.session_state.get("profile_pic")
     name = st.session_state.get("name", "")
     tagline = st.session_state.get("tagline", "")
-    credit_score_verified = st.session_state.get("credit_score_verified", "")
+    credit_score_verified = st.session_state.get("status", "")
     recommendation_status = st.session_state.get("recommendation_status", "")
     
     # save the session state of the profile summary
@@ -38,5 +38,10 @@ def renter_summary_profile():
 
         st.write(f"**Name:** {name}")
         st.write(f"**Tagline:** {tagline}")
-        st.write(f"**Credit Score Status:** {credit_score_verified}")
+        if credit_score_verified == "Verified":
+            st.write("**Credit Score: Verified 🟢**")
+        elif credit_score_verified == "Not Verified":
+            st.write("**Credit Score: Not Verified 🔴**")
+        else:
+            st.write("**Credit Score: Pending ⏳**")
         st.write(f"**Recommendation Status:** {recommendation_status}")

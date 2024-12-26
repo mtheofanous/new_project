@@ -34,7 +34,7 @@ def renter_full_profile():
     hobbies = st.session_state.get("hobbies", "")
     income = st.session_state.get("income", "")
     uploaded_credit_score = st.session_state.get("uploaded_credit_score", "")
-    credit_score_verified = st.session_state.get("credit_score_verified", "")
+    credit_score_verified = st.session_state.get("status", "")
     landlord_name = st.session_state.get("landlord_name", "")
     landlord_email = st.session_state.get("landlord_email", "")
     landlord_phone = st.session_state.get("landlord_phone", "")
@@ -78,10 +78,12 @@ def renter_full_profile():
     st.markdown(f"##### **Bio:** {bio}")
     st.markdown(f"##### **Hobbies:** {hobbies}")
     st.markdown(f"##### **Income:** €{income}")
-    if credit_score_verified == True:
-        st.markdown("##### **Credit Score verified ✅**")
-    elif credit_score_verified == False:
-        st.markdown("#### **Credit score not verified ❌**")
+    if credit_score_verified == "Verified":
+        st.markdown("##### **Credit Score verified 🟢**")
+    elif credit_score_verified == "Not Verified":
+        st.markdown("##### **Credit score not verified 🔴**")
+    elif credit_score_verified == "Pending":
+        st.markdown("##### **Credit score verification pending ⏳**")
     st.markdown(f"##### **Recommendation Status:** {recommendation_status}")
 
     st.markdown("---")

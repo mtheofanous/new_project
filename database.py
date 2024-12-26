@@ -148,85 +148,31 @@ def save_rental_preferences_to_db(profile_id, preferences_data):
     finally:
         conn.close()
 
-# # Save rental preferences to the database
-# def save_rental_preferences_to_db(profile_id, preferences_data):
-#     """
-#     Save or update rental preferences in the database.
-#     :param profile_id: The profile ID associated with the rental preferences.
-#     :param preferences_data: A dictionary containing the rental preferences.
-#     """
-#     conn = get_db_connection()
-#     cursor = conn.cursor()
 
-#     try:
-#         # Execute the SQL query to insert or update rental preferences
-#         cursor.execute("""
-#         INSERT INTO rental_preferences (
-#             profile_id, preferred_city, preferred_area, budget_min, budget_max, 
-#             property_type, rooms_needed, number_of_people, move_in_date, lease_duration, 
-#             pets, pet_type
-#         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-#         ON CONFLICT(profile_id) DO UPDATE SET
-#             preferred_city = excluded.preferred_city, 
-#             preferred_area = excluded.preferred_area,
-#             budget_min = excluded.budget_min, 
-#             budget_max = excluded.budget_max,
-#             property_type = excluded.property_type, 
-#             rooms_needed = excluded.rooms_needed,
-#             number_of_people = excluded.number_of_people, 
-#             move_in_date = excluded.move_in_date,
-#             lease_duration = excluded.lease_duration, 
-#             pets = excluded.pets, 
-#             pet_type = excluded.pet_type
-#         """, (
-#             profile_id,
-#             preferences_data.get("preferred_city"),
-#             preferences_data.get("preferred_area"),
-#             preferences_data.get("budget_min"),
-#             preferences_data.get("budget_max"),
-#             preferences_data.get("property_type"),
-#             preferences_data.get("rooms_needed"),
-#             preferences_data.get("number_of_people"),
-#             preferences_data.get("move_in_date"),
-#             preferences_data.get("lease_duration"),
-#             preferences_data.get("pets"),
-#             preferences_data.get("pet_type")
-#         ))
-
-#         # Commit the transaction
-#         conn.commit()
-#         print("Rental preferences saved or updated successfully.")
-
-#     except sqlite3.Error as e:
-#         # Handle database errors gracefully
-#         raise ValueError(f"Database error while saving rental preferences: {e}")
-
-#     finally:
-#         # Ensure the connection is closed
-#         conn.close()
-
-
-# Save credit scores to the database
-def save_credit_scores_to_db(profile_id, credit_score_data):
+def save_credit_score(user_id, status):
+    """Save a renter's credit score to the database."""
     conn = get_db_connection()
     cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO renter_credit_scores (user_id, status) 
+        VALUES (?, ?)
+        """,
+        (user_id, status)
+    )
+    conn.commit()
+    conn.close()
+    print(f"Credit score for user_id {user_id} saved with status '{status}'.")
 
-    try:
-        cursor.execute("""
-        INSERT INTO credit_scores (profile_id, credit_score_verified, uploaded_document)
-        VALUES (?, ?, ?)
-        ON CONFLICT(profile_id) DO UPDATE SET
-            credit_score_verified=excluded.credit_score_verified, uploaded_document=excluded.uploaded_document
-        """, (
-            profile_id,
-            credit_score_data.get("credit_score_verified"),
-            credit_score_data.get("uploaded_document")
-        ))
-
-        conn.commit()
-
-    finally:
-        conn.close()
+def load_credit_scores():
+    """Load all renter credit scores from the database."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM renter_credit_scores")
+    credit_scores = cursor.fetchall()
+    conn.close()
+    print("Credit scores loaded successfully.")
+    return credit_scores
         
 # Save landlord recommendations to the database
 def save_landlord_recommendations_to_db(renter_id, recommendations):
@@ -250,6 +196,7 @@ def save_landlord_recommendations_to_db(renter_id, recommendations):
 
     finally:
         conn.close()
+        
 
 
 def load_user_from_db(user_id=None, email=None):
@@ -266,10 +213,10 @@ def load_user_from_db(user_id=None, email=None):
         if user_id and email:
             raise ValueError("Provide only one of user_id or email, not both.")
         elif user_id:
-            query = "SELECT id, username, email, password_hash, role FROM users WHERE id = ?"
+            query = "SELECT id, username, email, password_hash FROM users WHERE id = ?"
             cursor.execute(query, (user_id,))
         elif email:
-            query = "SELECT id, username, email, password_hash, role FROM users WHERE email = ?"
+            query = "SELECT id, username, email, password_hash FROM users WHERE email = ?"
             cursor.execute(query, (email,))
         else:
             raise ValueError("Either user_id or email must be provided.")
@@ -281,8 +228,7 @@ def load_user_from_db(user_id=None, email=None):
                 "id": user["id"],
                 "username": user["username"],
                 "email": user["email"],
-                "password_hash": user["password_hash"],
-                "role": user["role"]
+                "password_hash": user["password_hash"]
             }
         return None
 

@@ -15,8 +15,30 @@ def verify_password(password, hashed):
     try:
         hash_part, salt = hashed.split('$')
         return hashlib.sha256((password + salt).encode()).hexdigest() == hash_part
-    except ValueError:
+    except ValueError as e:
+        print(f"Invalid hashed format: {hashed}. Error: {e}")
         return False
+    
+def update_user_password(user_id, new_password):
+    """Update a user's password in the database."""
+    if len(new_password) < 8:
+        raise ValueError("Password must be at least 8 characters long.")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Hash the new password
+    new_password_hash = hash_password(new_password)
+    # Update the password in the database
+    cursor.execute(
+        """
+        UPDATE users
+        SET password_hash = ?
+        WHERE id = ?
+        """,
+        (new_password_hash, user_id)
+    )
+    conn.commit()
+    conn.close()
+    print(f"Password updated successfully for user_id {user_id}.")
 
 
 def authenticate_user(email, password):
@@ -24,22 +46,38 @@ def authenticate_user(email, password):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Retrieve the user record by email
-    cursor.execute("SELECT id, username, email, password_hash, role FROM users WHERE email = ?", (email,))
-    user = cursor.fetchone()
+    # Retrieve the user record and their roles by email
+    query = """
+    SELECT u.id, u.username, u.email, u.password_hash, r.role
+    FROM users u
+    LEFT JOIN user_roles ur ON u.id = ur.user_id
+    LEFT JOIN roles r ON ur.role_id = r.id
+    WHERE u.email = ?
+    """
+    cursor.execute(query, (email,))
+    rows = cursor.fetchall()
     conn.close()
 
-    # If user exists and password matches, return user data
-    if user and verify_password(password, user["password_hash"]):
-        return {
-            "id": user["id"],
-            "username": user["username"],
-            "email": user["email"],
-            "role": user["role"],
-        }
+    # If no user is found, return None
+    if not rows:
+        return None
 
-    # If authentication fails, return None
-    return None
+    # Extract the user's data (assumes user data is consistent across rows)
+    user_data = {
+        "id": rows[0]["id"],
+        "username": rows[0]["username"],
+        "email": rows[0]["email"],
+        "password_hash": rows[0]["password_hash"],
+        "roles": [row["role"] for row in rows if row["role"]]  # Collect all roles
+    }
+
+    # Verify the password
+    if verify_password(password, user_data["password_hash"]):
+        # Remove the password_hash before returning user data for security reasons
+        user_data.pop("password_hash")
+        return user_data
+    else:
+        return None
 
 
 def add_user(username, email, password, role):
@@ -68,3 +106,21 @@ def add_user(username, email, password, role):
     conn.close()
 
     return user_id  # Return the new user's ID
+
+def delete_user_account(user_id):
+    """Delete a user's account from the database."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Delete the user account
+    cursor.execute(
+        """
+        DELETE FROM users
+        WHERE id = ?
+        """,
+        (user_id,)
+    )
+    conn.commit()
+    conn.close()
+    print(f"User account with user_id {user_id} deleted successfully.")
+
+

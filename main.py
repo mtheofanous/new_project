@@ -10,6 +10,7 @@ from renter.renter_full_profile import renter_full_profile
 from dashboard import dashboard
 from recommendations.recommendation import recommendation
 from credit_score.credit_score import credit_score
+from settings import profile_settings
 
 def main():
     # Ensure database tables are created
@@ -42,6 +43,8 @@ def main():
         recommendation()
     elif st.session_state["current_page"] == "credit_score":
         credit_score()
+    elif st.session_state["current_page"] == "profile_settings":
+        profile_settings()
 
 
 if __name__ == "__main__":

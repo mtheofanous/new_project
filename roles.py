@@ -17,6 +17,9 @@ def add_role(role_name):
 
 def assign_role_to_user(user_id, role_name):
     """Assign a specific role to a user."""
+    if not role_name or role_name.strip() == "":
+        raise ValueError("Invalid role name. Role name cannot be empty or None.")
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -26,7 +29,7 @@ def assign_role_to_user(user_id, role_name):
         role = cursor.fetchone()
 
         if role:
-            role_id = role['id']
+            role_id = role["id"]
         else:
             # If the role doesn't exist, insert it
             cursor.execute("INSERT INTO roles (role) VALUES (?)", (role_name,))
@@ -39,6 +42,10 @@ def assign_role_to_user(user_id, role_name):
         """, (user_id, role_id))
 
         conn.commit()
+
+    except sqlite3.IntegrityError as e:
+        print(f"Database integrity error: {e}")
+        raise
 
     finally:
         conn.close()
@@ -61,18 +68,43 @@ def get_user_roles(user_id):
 
 def remove_role_from_user(user_id, role_name):
     """Remove a specific role from a user."""
+    if not role_name or role_name.strip() == "":
+        raise ValueError("Invalid role name. Role name cannot be empty or None.")
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-    DELETE FROM user_roles 
-    WHERE user_id = ? AND role_id = (
-        SELECT id FROM roles WHERE role = ?
-    )
-    """, (user_id, role_name))
+    try:
+        # Ensure the role exists in the roles table
+        cursor.execute("SELECT id FROM roles WHERE role = ?", (role_name,))
+        role = cursor.fetchone()
 
-    conn.commit()
-    conn.close()
+        if not role:
+            raise ValueError(f"Role '{role_name}' does not exist in the database.")
+
+        role_id = role["id"]
+
+        # Delete the user-role relationship for the specific user and role
+        cursor.execute("""
+        DELETE FROM user_roles
+        WHERE user_id = ? AND role_id = ?
+        """, (user_id, role_id))
+
+        # Commit the changes
+        conn.commit()
+
+        # Verify that only one role was deleted
+        if cursor.rowcount == 0:
+            print(f"No role '{role_name}' found for user_id {user_id}.")
+        elif cursor.rowcount > 1:
+            print(f"Warning: Multiple rows deleted for user_id {user_id} and role '{role_name}'.")
+
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        raise
+
+    finally:
+        conn.close()
 
 def get_users_with_role(role_name):
     """Retrieve all users with a specific role."""

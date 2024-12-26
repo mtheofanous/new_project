@@ -7,15 +7,26 @@ from renter.renter_summary_profile import renter_summary_profile
 from renter.renter_full_profile import renter_full_profile
 from renter.edit_renter_profile import edit_renter_profile
 from recommendations.recommendation import recommendation
+from credit_score.credit_score import credit_score
+from settings import profile_settings
+from roles import get_user_roles
 
 def renter_dashboard():
     
     st.title("Renter Dashboard")
     st.write("Welcome to your dashboard! Here you can manage your profile, send recommendations, and explore properties.")
     renter_summary_profile()
-
-    if st.button("Recommendations", key="recommendation_button"):
-                st.session_state["current_page"] = "recommendation"
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        if st.button("Manage Recommendations", key="recommendation_button"):
+                    st.session_state["current_page"] = "recommendation"
+                    
+    with col2:
+        if st.button("Manage Credit Score", key="credit_score_button"):
+                    st.session_state["current_page"] = "credit_score"
+                    
     # Available Properties
     with st.expander("Available Properties"):
         st.write("Based on your preferences, here are some properties you might like:")
@@ -66,6 +77,10 @@ def dashboard():
                 
     # Create columns to align the log out button on the right
     col1, col2 = st.columns([6, 1])  # Adjust column proportions as needed
+    with col1:
+        if st.button("Settings", key="settings_button"):
+            st.session_state["current_page"] = "profile_settings"
+            
     with col2:
         if st.button("Log Out", key="log_out_button"):
             st.session_state["logout_confirmation"] = True
@@ -87,12 +102,18 @@ def dashboard():
                 if st.button("No", key="cancel_logout"):
                     st.session_state["logout_confirmation"] = False
                 
-    # Load dashboard based on role
+    # Load the user's roles
+    roles = get_user_roles(st.session_state["user_id"])
+    if len(roles) > 1:
+        st.write("You have multiple roles assigned to your account.")
+        st.write("Please select a role to proceed.")
+        selected_role = st.selectbox("Select Role", roles, key="role_selectbox",
+                                     index=roles.index(st.session_state["role"]) if "role" in st.session_state else 0)
+        st.session_state["role"] = selected_role
+    else:
+        st.session_state["role"] = roles[0]
                 
-    role = st.session_state.get("role", "Renter")
-                
-    role = st.selectbox("**Role**", ["Renter", "Landlord", "Agent"], key="signup_role", index=["Renter", "Landlord", "Agent"].index(role))
-
+    role = st.session_state["role"]
     if role == "Renter":
         renter_dashboard()
     elif role == "Landlord":

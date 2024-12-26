@@ -2,7 +2,7 @@ import streamlit as st
 import uuid
 from navigation_buttons import home_button, back_button 
 from renter.rental_preferences import rental_preferences
-from credit_score.credit_score import income_credit_score
+from credit_score.credit_score import credit_score
 from database import save_renter_profile_to_db, save_rental_preferences_to_db
 
 def edit_renter_profile():
