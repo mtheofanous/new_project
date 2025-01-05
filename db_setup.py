@@ -48,8 +48,9 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS renter_profiles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL UNIQUE,
-        profile_pic BLOB DEFAULT NULL,
-        name TEXT DEFAULT NULL,
+        profile_pic BLOB,
+        first_name TEXT DEFAULT NULL,
+        surname TEXT DEFAULT NULL,
         tagline TEXT DEFAULT NULL,
         age INTEGER CHECK (age >= 18) DEFAULT 18,
         phone TEXT CHECK (phone GLOB '+[0-9]*' OR (phone GLOB '[0-9]*' AND length(phone) = 10)), 
@@ -113,6 +114,7 @@ def create_tables():
         move_in_date DATE,
         pets BOOLEAN,
         pet_type TEXT,
+        lease_duration TEXT,
         FOREIGN KEY (profile_id) REFERENCES renter_profiles(id) ON DELETE CASCADE
     )
     """)

@@ -7,8 +7,8 @@ from renter.renter_summary_profile import renter_summary_profile
 from renter.renter_full_profile import renter_full_profile
 from renter.edit_renter_profile import edit_renter_profile
 from agent.agent_summary_profile import agent_summary_profile
-from recommendations.recommendation import recommendation
-from credit_score.credit_score import credit_score
+from renter.recommendations.recommendation import recommendation
+from renter.credit_score.credit_score import credit_score
 from settings import profile_settings
 from roles import get_user_roles
 
@@ -18,13 +18,16 @@ def renter_dashboard():
     st.write("Welcome to your dashboard! Here you can manage your profile, send recommendations, and explore properties.")
     renter_summary_profile()
     
-    col1, col2 = st.columns([1, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
+        if st.button("Rental Preferences", key="rental_preferences_button"):
+                    st.session_state["current_page"] = "rental_preferences"
+    with col2:
         if st.button("Manage Recommendations", key="recommendation_button"):
                     st.session_state["current_page"] = "recommendation"
                     
-    with col2:
+    with col3:
         if st.button("Manage Credit Score", key="credit_score_button"):
                     st.session_state["current_page"] = "credit_score"
                     
@@ -165,8 +168,7 @@ def dashboard():
         st.write("Landlord Dashboard")
         # landlord_dashboard()
     elif role == "Agent":
-        st.write("Agent Dashboard")
-        # agent_dashboard()
+        agent_dashboard()
 
 if __name__ == "__main__":
     dashboard()

@@ -2,10 +2,8 @@ import streamlit as st
 from database import load_user_from_db, load_agent_profile_from_db
 # agent_summary_profile
 def agent_summary_profile():
-    st.write("Agent Summary Profile")
-    st.write("Welcome to your agent summary profile! Here you can view your profile details.")
     
-    agent_profile = load_agent_profile_from_db(agent_id=st.session_state["user_id"])
+    agent_profile = load_agent_profile_from_db(user_id=st.session_state["user_id"])
     
     # Profile Summary
     col1, col2 = st.columns([1, 4])

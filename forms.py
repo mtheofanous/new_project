@@ -61,30 +61,11 @@ def login_form():
                 
                 profile = load_renter_profile_from_db(user["id"])
                 if profile:
-                    st.session_state["profile_pic"] = profile["profile_pic"]
-                    st.session_state["name"] = profile["name"]
-                    st.session_state["tagline"] = profile["tagline"]
-                    st.session_state["age"] = profile["age"]
-                    st.session_state["phone"] = profile["phone"]
-                    st.session_state["nationality"] = profile["nationality"]
-                    st.session_state["occupation"] = profile["occupation"]
-                    st.session_state["contract_type"] = profile["contract_type"]
-                    st.session_state["income"] = profile["income"]
-                    st.session_state["work_mode"] = profile["work_mode"]
-                    st.session_state["bio"] = profile["bio"]
-                    st.session_state["hobbies"] = profile["hobbies"]
+                    st.session_state["renter_profile"] = profile
 
                 preferences = load_rental_preferences_from_db(profile_id=profile["id"])
                 if preferences:
-                    st.session_state["preferred_city"] = preferences['preferred_city']
-                    st.session_state["preferred_area"] = preferences['preferred_area']
-                    st.session_state["budget_min"] = preferences['budget_min']
-                    st.session_state["budget_max"] = preferences['budget_max']
-                    st.session_state["property_type"] = preferences['property_type']
-                    st.session_state["rooms_needed"] = preferences['rooms_needed']
-                    st.session_state["move_in_date"] = preferences['move_in_date']
-                    st.session_state["pets"] = preferences['pets']
-                    st.session_state["pet_type"] = preferences['pet_type']
+                    st.session_state["rental_preferences"] = preferences
 
                 credit_score_status = load_credit_scores(user["id"])
                 if credit_score_status:

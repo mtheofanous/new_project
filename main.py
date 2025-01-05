@@ -5,12 +5,13 @@ from landing_page import landing_page
 from forms import login_form, signup_form
 from renter.create_renter_profile import create_renter_profile
 from renter.edit_renter_profile import edit_renter_profile
-from renter.renter_summary_profile import renter_summary_profile
 from renter.renter_full_profile import renter_full_profile
 from agent.create_agent_profile import create_agent_profile
+from agent.edit_agent_profile import edit_agent_profile
 from dashboard import dashboard
-from recommendations.recommendation import recommendation
-from credit_score.credit_score import credit_score
+from renter.recommendations.recommendation import recommendation
+from renter.credit_score.credit_score import credit_score
+from renter.rental_preferences import rental_preferences
 from settings import profile_settings
 
 def main():
@@ -48,6 +49,10 @@ def main():
         profile_settings()
     elif st.session_state["current_page"] == "create_agent_profile":
         create_agent_profile()
+    elif st.session_state["current_page"] == "edit_agent_profile":
+        edit_agent_profile()
+    elif st.session_state["current_page"] == "rental_preferences":
+        rental_preferences()
 
 
 if __name__ == "__main__":

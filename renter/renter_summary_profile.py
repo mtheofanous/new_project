@@ -6,23 +6,25 @@ from PIL import Image
 
         
 def renter_summary_profile():
+    
+    renter_profile = st.session_state.get("renter_profile")
 
-    profile_pic = st.session_state.get("profile_pic")
-    name = st.session_state.get("name", "")
-    tagline = st.session_state.get("tagline", "")
+    profile_pic = renter_profile["profile_pic"]
+    name = f"{renter_profile['first_name']} {renter_profile['surname']}"
+    tagline = renter_profile["tagline"]
     # if status is not set then credit_score_verified is Not Verified
     if "status" not in st.session_state:
         st.session_state["status"] = "Not Verified"
-    else:
-        status = st.session_state.get("status")
+
+    status = st.session_state.get("status")
     recommendation_status = st.session_state.get("recommendation_status", "")
     
-    # save the session state of the profile summary
-    st.session_state["profile_pic"] = profile_pic
-    st.session_state["name"] = name
-    st.session_state["tagline"] = tagline
-    st.session_state["status"] = status
-    st.session_state["recommendation_status"] = recommendation_status
+    # # save the session state of the profile summary
+    # st.session_state["profile_pic"] = profile_pic
+    # st.session_state["name"] = name
+    # st.session_state["tagline"] = tagline
+    # st.session_state["status"] = status
+    # st.session_state["recommendation_status"] = recommendation_status
     
     # Profile Summary
     

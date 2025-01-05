@@ -19,13 +19,13 @@ def create_agent_profile():
         social_media = st.text_input("Social Media Link (optional):")
 
     with st.expander("Work Details"):
-        working_days = st.multiselect("Working Days:", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], default=["Monday", "Friday"])
-        working_hours = st.slider("Working Hours:", 0, 24, (9, 17), format="%d:00")
-        preferred_communication = st.multiselect("Preferred Communication Methods:", ["Phone", "Email", "Text", "In-person"], default=["Phone", "Email"])
+        working_days = st.text_input("Working Days:", "Monday - Friday")
+        working_hours = st.text_input("Working Hours:", "9:00 AM - 5:00 PM")
+        preferred_communication = st.text_input("Preferred Communication Methods:", "Email, Phone")
 
     with st.expander("Professional Background"):
-        services = st.multiselect("Services Offered:", ["Tenant Matching", "Landlord Support", "Lease Management", "Market Analysis"], default=["Tenant Matching"])
-        languages = st.multiselect("Languages Spoken:", ["English", "Greek", "Italian","Spanish", "French", "Russian","Mandarin", "Arabic"], default=["English"])
+        services = st.text_input("Services Offered:", "Tenant Matching, Landlord Support, Lease Preparation")
+        languages = st.text_input("Languages Spoken:", "English, Greek")
 
     with st.expander("Additional Information"):
         mission_statement = st.text_area("Mission Statement (optional):")
@@ -45,11 +45,11 @@ def create_agent_profile():
             "preferred_communication": preferred_communication,
             "services": services,
             "languages": languages,
-            "mission_statement": mission_statement.strip()
+            "mission_statement": mission_statement
         }
 
         # Save the profile to the database
-        user_id = st.session_state.get("user_id")
+        user_id = st.session_state["user_id"]
         save_agent_profile_to_db(user_id, agent_profile)
         
         st.success("Profile saved successfully!")

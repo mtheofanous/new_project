@@ -15,18 +15,18 @@ def verify_password(password, hashed):
     try:
         hash_part, salt = hashed.split('$')
         return hashlib.sha256((password + salt).encode()).hexdigest() == hash_part
-    except ValueError as e:
-        print(f"Invalid hashed format: {hashed}. Error: {e}")
+    except ValueError:
         return False
     
 def update_user_password(user_id, new_password):
     """Update a user's password in the database."""
     if len(new_password) < 8:
         raise ValueError("Password must be at least 8 characters long.")
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    
     # Hash the new password
     new_password_hash = hash_password(new_password)
+    conn = get_db_connection()
+    cursor = conn.cursor()
     # Update the password in the database
     cursor.execute(
         """
@@ -39,6 +39,7 @@ def update_user_password(user_id, new_password):
     conn.commit()
     conn.close()
     print(f"Password updated successfully for user_id {user_id}.")
+    return new_password_hash
 
 
 def authenticate_user(email, password):
