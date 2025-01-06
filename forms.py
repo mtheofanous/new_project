@@ -7,6 +7,7 @@ from database import (
     load_renter_profile_from_db,
     load_rental_preferences_from_db,
     load_credit_scores,
+    load_agent_profile_from_db
 )
 from app.components.utils import verify_password  # Import the password verification function
 from roles import assign_role_to_user, get_user_roles
@@ -83,12 +84,18 @@ def login_form():
                 st.session_state["email"] = user["email"]
 
             elif roles[0] == "Agent":
-                st.session_state["current_page"] = "dashboard"
                 
                 st.session_state["user_id"] = user["id"]
                 st.session_state["user"] = user["username"]
                 st.session_state["role"] = roles
                 st.session_state["email"] = user["email"]
+                
+                profile = load_agent_profile_from_db(user["id"])
+                if profile:
+                    st.session_state["agent_profile"] = profile
+                
+                st.session_state["current_page"] = "dashboard"
+                st.rerun()
 
         except Exception as e:
             st.error(f"An error occurred during login: {e}")

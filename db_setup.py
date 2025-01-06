@@ -19,15 +19,18 @@ def create_tables():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL
-   
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_logout TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
     # Roles Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS roles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        role TEXT NOT NULL
+        role TEXT NOT NULL UNIQUE
     )
     """)
     
@@ -62,6 +65,8 @@ def create_tables():
         bio TEXT DEFAULT NULL,
         hobbies TEXT DEFAULT NULL,
         social_media TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     """)
@@ -89,6 +94,8 @@ def create_tables():
         services TEXT DEFAULT NULL,     
         languages TEXT DEFAULT NULL,
         mission_statement TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE   
     )
     """)
@@ -115,6 +122,8 @@ def create_tables():
         pets BOOLEAN,
         pet_type TEXT,
         lease_duration TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (profile_id) REFERENCES renter_profiles(id) ON DELETE CASCADE
     )
     """)
@@ -124,22 +133,51 @@ def create_tables():
     CREATE UNIQUE INDEX IF NOT EXISTS unique_profile_id ON rental_preferences (profile_id);
     """)
     
-    # Updated Renter Credit Score Table
+    # Renter Credit Score Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS renter_credit_scores (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        status TEXT CHECK (status IN ('Not Verified', 'Pending', 'Verified')) DEFAULT 'Not Verified',
-        authorized BOOLEAN DEFAULT 0, -- 0 for False, 1 for True
-        uploaded_file BOOLEAN DEFAULT 0, -- 0 for False, 1 for True
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        user_id INTEGER NOT NULL, -- The user marking the favorite
+        favorite_user_id INTEGER, -- The user being favorited (agent, renter, or landlord)
+        favorite_renter_id INTEGER, -- Optional: specific renter profiles
+        favorite_landlord_id INTEGER, -- Optional: specific landlord profiles
+        favorite_agent_id INTEGER, -- Optional: specific agent profiles
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (favorite_user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (favorite_renter_id) REFERENCES renter_profiles(id) ON DELETE CASCADE,
+        FOREIGN KEY (favorite_landlord_id) REFERENCES landlord_profiles(id) ON DELETE CASCADE,
+        FOREIGN KEY (favorite_agent_id) REFERENCES agent_profiles(id) ON DELETE CASCADE,
+        UNIQUE (user_id, favorite_user_id, favorite_renter_id, favorite_landlord_id, favorite_agent_id)
+    )
+    """)
+    
+    # Add UNIQUE index to user_id if it doesn't exist
+    cursor.execute("""
+    CREATE UNIQUE INDEX IF NOT EXISTS unique_user_id ON renter_credit_scores (user_id);
+    """)
+
+    conn.commit()
+    conn.close()
+    print("Tables created successfully.")
+    
+    # Favorites Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,  -- The user marking the favorite
+        profile_type TEXT CHECK (profile_type IN ('renter', 'landlord', 'agent')) NOT NULL,  -- Type of the profile being favorited
+        profile_id INTEGER NOT NULL,  -- ID of the renter, landlord, or agent profile
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (profile_id) REFERENCES renter_profiles(id) ON DELETE CASCADE,  -- Dynamically links to appropriate profile tables
+        UNIQUE (user_id, profile_type, profile_id)  -- Prevents duplicate favorites
     )
     """)
 
     conn.commit()
     conn.close()
-    print("All tables created successfully.")
+    print("Favorites table created successfully.")
     
 
 
@@ -147,47 +185,4 @@ if __name__ == "__main__":
     create_tables()
 
 
-# # def reinitialize_database():
-# #     """Reinitialize the database by dropping and recreating all tables."""
-# #     drop_tables()
-# #     create_tables()
-    
-# def check_rental_preferences_schema():
-#     """
-#     Check the schema of the rental_preferences table and confirm if profile_id is UNIQUE.
-#     """
-#     conn = sqlite3.connect(DATABASE_PATH)
-#     cursor = conn.cursor()
-
-#     try:
-#         # Check the schema of the rental_preferences table
-#         cursor.execute("PRAGMA table_info(rental_preferences);")
-#         table_info = cursor.fetchall()
-
-#         print("Schema of rental_preferences table:")
-#         print("cid | Name           | Type      | NotNull | Default | PK")
-#         print("-------------------------------------------------------")
-#         for column in table_info:
-#             print(column)
-
-#         # Check for UNIQUE constraints or indexes
-#         cursor.execute("PRAGMA index_list(rental_preferences);")
-#         indexes = cursor.fetchall()
-
-#         print("\nIndexes on rental_preferences table:")
-#         print("Index Name      | Unique")
-#         print("----------------|--------")
-#         for index in indexes:
-#             print(f"{index[1]} | {'Yes' if index[2] else 'No'}")  # Access tuple elements by index
-
-#     except sqlite3.Error as e:
-#         print(f"Error checking schema: {e}")
-
-#     finally:
-#         conn.close()
-
-
-# if __name__ == "__main__":
-#     print("Reinitializing database...")
-#     check_rental_preferences_schema()
 

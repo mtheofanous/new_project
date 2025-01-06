@@ -7,6 +7,7 @@ from renter.renter_summary_profile import renter_summary_profile
 from renter.renter_full_profile import renter_full_profile
 from renter.edit_renter_profile import edit_renter_profile
 from agent.agent_summary_profile import agent_summary_profile
+from agent.search_renters import search_renters
 from renter.recommendations.recommendation import recommendation
 from renter.credit_score.credit_score import credit_score
 from settings import profile_settings
@@ -59,13 +60,17 @@ def agent_dashboard():
     st.write("Welcome to your dashboard! Here you can manage your profile, view listings, and interact with clients.")
     agent_summary_profile()
     
-    col1, col2 = st.columns([1, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
+        if st.button("Search Renters", key="search_renters_button"):
+                    st.session_state["current_page"] = "search_renters"
+    
+    with col2:
         if st.button("Manage Listings", key="listing_button"):
                     st.session_state["current_page"] = "listing"
                     
-    with col2:
+    with col3:
         if st.button("Manage Client Reviews", key="client_reviews_button"):
                     st.session_state["current_page"] = "client_reviews"
                     
@@ -89,6 +94,7 @@ def agent_dashboard():
             if st.button(f"View Client Reviews for {property['name']}", key=f"reviews_{property['name']}"):
                 st.info(f"Client reviews for {property['name']} are not yet implemented.")
             st.markdown("---")
+            
 def dashboard():
     # Ensure session state is initialized
     if "role" not in st.session_state:
@@ -97,19 +103,6 @@ def dashboard():
     if "current_page" not in st.session_state:
         st.session_state["current_page"] = "dashboard"
 
-    # Navigation based on current_page
-    if st.session_state["current_page"] == "view_full_profile":
-        st.write("Full profile page not yet implemented.")
-        if st.button("Back to Dashboard", key="back_to_dashboard_from_profile"):
-            st.session_state["current_page"] = "dashboard"
-        return
-
-    if st.session_state["current_page"] == "create_renter_profile":
-        st.write("Edit profile page not yet implemented.")
-        if st.button("Back to Dashboard", key="back_to_dashboard_from_edit"):
-            st.session_state["current_page"] = "dashboard"
-        return
-    
     # log out button 
         
     if "logout_confirmation" not in st.session_state:

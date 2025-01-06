@@ -1,6 +1,13 @@
 import hashlib
 import uuid
 from db_setup import get_db_connection
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from bs4 import BeautifulSoup
+import re
 
 
 def hash_password(password):
@@ -123,5 +130,94 @@ def delete_user_account(user_id):
     conn.commit()
     conn.close()
     print(f"User account with user_id {user_id} deleted successfully.")
+    
+
+# Function to scrape property data
+def scrape_data_to_dict(url):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    browser = webdriver.Chrome(options=chrome_options)
+
+    data_dict = {}
+    try:
+        browser.get(url)
+        soup = BeautifulSoup(browser.page_source, 'html.parser')
+
+        # Extract type, size, and location
+        for s in soup.find_all("div", {"class": "title"}):
+            p = s.find("h1")
+            if p:
+                title_text = p.text.strip()
+                type_match = re.match(r"^(.*?)(\d)", title_text)
+                if type_match:
+                    property_type = type_match.group(1).strip()
+                size_match = re.search(r"\d+", title_text)
+                if size_match:
+                    property_size = size_match.group()
+            l = s.find("h3")
+            if l:
+                property_location = l.text.strip()
+
+        price_div = soup.find("div", {"class": "price"})
+        if price_div:
+            price_text = price_div.text
+            property_price = price_text.replace("€", "").replace(",", "").replace(" ", "").replace(".", "").strip()
+
+        spm_div = soup.find("div", {"class": "price-square-meter"})
+        if spm_div:
+            spm_text = spm_div.text
+            price_per_sqm = spm_text.replace("€", "").replace("/", "").replace("sq.m.", "").replace(".", "").strip()
+
+        data_dict.update({
+            'property_type': property_type,
+            'property_size': property_size,
+            'property_location': property_location,
+            'property_price': property_price,
+            'price_per_sqm': price_per_sqm,
+        })
+
+        characteristics = {}
+        for li in soup.find_all('li', class_='cell large-6', attrs={'data-testid': 'characteristic'}):
+            text = li.get_text(strip=True).split(':', 1)
+            if len(text) == 2:
+                characteristics[text[0].strip()] = text[1].strip()
+            else:
+                characteristics[text[0].strip()] = ""
+        data_dict['characteristics'] = characteristics
+
+        statistics = {}
+        stats_section = soup.find('section', {'data-testid': 'statistics'})
+        if stats_section:
+            for p in stats_section.find_all('p'):
+                if ':' in p.text:
+                    label, _, value = p.text.partition(':')
+                    statistics[label.strip()] = value.strip()
+        data_dict['statistics'] = statistics
+
+        try:
+            button = WebDriverWait(browser, 10).until(
+                EC.presence_of_element_located((By.XPATH, '//button[@data-testid="image-count-icon"]'))
+            )
+            browser.execute_script("arguments[0].click();", button)
+            WebDriverWait(browser, 10).until(lambda driver: len(driver.find_elements(By.TAG_NAME, 'img')) > 0)
+            soup = BeautifulSoup(browser.page_source, 'html.parser')
+        except Exception as e:
+            print(f"Error clicking button or loading images: {e}")
+
+        unique_images = set()
+        images = []
+        for img in soup.find_all("img", alt=True):
+            src = img.get("src")
+            alt = img.get("alt")
+            if src not in unique_images:
+                unique_images.add(src)
+                images.append({"src": src, "alt": alt})
+        data_dict['images'] = images
+
+        return data_dict
+    finally:
+        browser.quit()
 
 

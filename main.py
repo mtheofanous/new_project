@@ -8,6 +8,9 @@ from renter.edit_renter_profile import edit_renter_profile
 from renter.renter_full_profile import renter_full_profile
 from agent.create_agent_profile import create_agent_profile
 from agent.edit_agent_profile import edit_agent_profile
+from agent.agent_full_profile import agent_full_profile
+from agent.search_renters import search_renters
+from agent.listing import listing
 from dashboard import dashboard
 from renter.recommendations.recommendation import recommendation
 from renter.credit_score.credit_score import credit_score
@@ -25,7 +28,7 @@ def main():
         st.session_state["user_id"] = None
     if "profile_loaded" not in st.session_state:
         st.session_state["profile_loaded"] = False
-
+        
     # Page routing
     if st.session_state["current_page"] == "landing":
         landing_page()
@@ -51,9 +54,18 @@ def main():
         create_agent_profile()
     elif st.session_state["current_page"] == "edit_agent_profile":
         edit_agent_profile()
+    elif st.session_state["current_page"] == "agent_full_profile":
+        agent_full_profile()
+    elif st.session_state["current_page"] == "search_renters":
+        search_renters()
     elif st.session_state["current_page"] == "rental_preferences":
         rental_preferences()
+    elif st.session_state["current_page"] == "listing":
+        listing()
+        
+    
 
 
 if __name__ == "__main__":
     main()
+

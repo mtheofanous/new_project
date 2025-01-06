@@ -6,7 +6,7 @@ def edit_agent_profile():
     
     back_button()
     
-    agent_profile = load_agent_profile_from_db(user_id=st.session_state["user_id"])
+    agent_profile = st.session_state["agent_profile"]
     
     st.title("Edit Agent Profile")
     
@@ -14,30 +14,66 @@ def edit_agent_profile():
     uploaded_file = st.file_uploader("Upload Profile Picture", type=["jpg", "jpeg", "png"])
     agent_profile_pic = uploaded_file.read() if uploaded_file else agent_profile["agent_profile_pic"]
     if agent_profile_pic:
-        st.image(agent_profile_pic, caption="Current Profile Picture", width=150)
-    
-    # Collecting profile data
-    profile_data = {
-        "agent_profile_pic": agent_profile_pic,
-        "name": st.text_input("Name", value=agent_profile["name"]),
-        "phone": st.text_input("Phone Number", value=agent_profile["phone"]),
-        "agency_name": st.text_input("Agency Name", value=agent_profile["agency_name"]),
-        "agency_address": st.text_input("Agency Address", value=agent_profile["agency_address"]),
-        "agency_website": st.text_input("Agency Website", value=agent_profile["agency_website"]),
-        "social_media": st.text_input("Social Media", value=agent_profile["social_media"]),
-        "working_days": st.text_input("Working Days", value=agent_profile["working_days"]),
-        "working_hours": st.text_input("Working Hours", value=agent_profile["working_hours"]),
-        "preferred_communication": st.text_input("Preferred Communication", value=agent_profile["preferred_communication"]),
-        "services": st.text_area("Services Offered", value=agent_profile["services"]),
-        "languages": st.text_input("Languages", value=agent_profile["languages"]),
-        "mission_statement": st.text_area("Mission Statement", value=agent_profile["mission_statement"])
-    }
-    
+        st.image(agent_profile_pic, caption="Current Agent Profile Picture", width=150)
+        
+    # Basic Information
+    with st.expander("Basic Information"):
+        name = st.text_input("Full Name", value=agent_profile["name"])
+        phone = st.text_input("Phone Number", value=agent_profile["phone"])
+        
+        if phone and (not phone.isdigit() or len(phone) not in (10, 12)):
+            st.error("Phone number must be 10 or 12 digits long and contain only numbers.")
+            return
+        
+        agency_name = st.text_input("Agency Name", value=agent_profile["agency_name"])
+        agency_address = st.text_input("Agency Address", value=agent_profile["agency_address"])
+        agency_website = st.text_input("Agency Website", value=agent_profile["agency_website"])
+        social_media = st.text_input("Social Media", value=agent_profile["social_media"])
+        
+    # Work Details
+    with st.expander("Work Details"):
+        working_days = st.text_input("Working Days", value=agent_profile["working_days"])
+        working_hours = st.text_input("Working Hours", value=agent_profile["working_hours"])
+        preferred_communication = st.text_input("Preferred Communication Methods", value=agent_profile["preferred_communication"])
+        
+    # Professional Background
+    with st.expander("Professional Background"):
+        services = st.text_input("Services Offered", value=agent_profile["services"])
+        languages = st.text_input("Languages Spoken", value=agent_profile["languages"])
+        
+    with st.expander("Additional Information"):
+        mission_statement = st.text_area("Mission Statement", value=agent_profile["mission_statement"])
+        
     # Save changes
-    if st.button("Save Changes"):
-        save_agent_profile_to_db(
-            user_id=st.session_state["user_id"], 
-            profile_data=profile_data  # Pass the profile data as a dictionary
-        )
-        st.success("Profile updated successfully!")
-        st.session_state["current_page"] = "dashboard"
+    if st.button("Save Profile"):
+        try:
+            agent_profile_pic_data = (
+                uploaded_file.read() if uploaded_file else agent_profile["agent_profile_pic"]
+            )
+            
+            updated_profile_data = {
+                "agent_profile_pic": agent_profile_pic_data,
+                "name": name,
+                "phone": phone,
+                "agency_name": agency_name,
+                "agency_address": agency_address,
+                "agency_website": agency_website,
+                "social_media": social_media,
+                "working_days": working_days,
+                "working_hours": working_hours,
+                "preferred_communication": preferred_communication,
+                "services": services,
+                "languages": languages,
+                "mission_statement": mission_statement,
+            }
+            
+            user_id = st.session_state["user_id"]
+            with st.spinner("Saving changes..."):
+                save_agent_profile_to_db(user_id=user_id, profile_data=updated_profile_data)
+                
+                st.session_state["agent_profile"] = updated_profile_data
+                st.success("Profile updated successfully!")
+                st.session_state["current_page"] = "dashboard"
+        except Exception as e:
+            st.error("An error occurred while updating your profile.")
+            print(f"Error: {e}")

@@ -2,15 +2,11 @@ import streamlit as st
 import uuid
 from navigation_buttons import home_button, back_button, log_out_button
 import streamlit.components.v1 as components
-from renter.rental_preferences import rental_preferences
 from PIL import Image
 
 def renter_full_profile():
     
     back_button()
-    
- 
-    # rental_preferences_data = rental_preferences()
     
     renter_profile = st.session_state["renter_profile"]
     
@@ -39,18 +35,7 @@ def renter_full_profile():
         st.markdown(f"##### **Income:** €{renter_profile['income']}")
         st.markdown(f"##### **Work Mode:** {renter_profile['work_mode']}")
 
-    # with col2:
-    #     st.markdown(f"##### **City:** {rental_preferences_data['preferred_city']}")
-    #     st.markdown(f"##### **Area:** {rental_preferences_data['preferred_area']}")
-    #     st.markdown(f"##### **Budget Range:** €{rental_preferences_data['budget_min']} - €{rental_preferences_data['budget_max']}")
-    #     st.markdown(f"##### **Property Type:** {rental_preferences_data['property_type']}")
-    #     st.markdown(f"##### **Rooms:** {rental_preferences_data.get('rooms_needed')}")
-    #     st.markdown(f"##### **Number of People:** {rental_preferences_data.get('num_people')}")
-    #     st.markdown(f"##### **Move-in Date:** {rental_preferences_data['move_in_date']}")
-    #     st.markdown(f"##### **Lease Duration:** {rental_preferences_data['lease_duration']}")
-    #     st.markdown(f"##### **Pets:** {rental_preferences_data['pets']}")
-    #     st.markdown(f"##### **Pet Type:** {rental_preferences_data['pet_type']}")
-    
+
     with col2:
         # Additional Information
         st.subheader("Additional Information")
@@ -69,8 +54,11 @@ def renter_full_profile():
     
 
     st.markdown("---")
-
     
+    # Edit Profile Button
+    if st.button("Edit Profile"):
+        st.session_state["current_page"] = "edit_renter_profile"
+
         
 if __name__ == "__main__":
     renter_full_profile()

@@ -43,8 +43,6 @@ def create_renter_profile():
     hobbies = st.text_area("Hobbies")
     social_media = st.text_input("Social Media")
 
-    # # Rental Preferences Inputs
-    # rental_preferences()  # Call the rental preferences function
 
     # Save Profile Button
     if st.button("Save Profile"):
@@ -89,29 +87,6 @@ def create_renter_profile():
                     st.error("Failed to save profile. Profile ID is invalid.")
                     return
                 
-                # # Save rental preferences to database
-                # rental_preferences_data = {
-                #     "preferred_city": st.session_state.get("city", ""),
-                #     "preferred_area": st.session_state.get("area", ""),
-                #     "budget_min": st.session_state.get("budget_min", ""),
-                #     "budget_max": st.session_state.get("budget_max", ""),
-                #     "property_type": st.session_state.get("property_type", ""),
-                #     "rooms_needed": st.session_state.get("rooms", ""),
-                #     "num_people": st.session_state.get("num_people", ""),
-                #     "move_in_date": st.session_state.get("move_in_date", ""),
-                #     "pets": st.session_state.get("pets", ""),
-                #     "pet_type": st.session_state.get("pet_type", ""),
-                #     "lease_duration": st.session_state.get("lease_duration", "")
-                # }
-                
-                # # Check if preferences data is valid
-                # if not rental_preferences_data:
-                #     st.error("Rental preferences are incomplete or missing.")
-                #     return
-                
-                # # Save rental preferences
-                # save_rental_preferences_to_db(profile_id, rental_preferences_data)
-                # st.session_state["rental_preferences"] = rental_preferences_data
 
                 st.success("Your profile has been created successfully!")
                 st.session_state["current_page"] = "dashboard"

@@ -162,12 +162,11 @@ def load_user_from_db(user_id=None, email=None):
 # Save renter profile to the database
 def save_renter_profile_to_db(user_id, profile_data):
     """Save or update renter profile data."""
-    import sqlite3
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     try:
-        profile_pic_data = sqlite3.Binary(profile_data.get("profile_pic")) if profile_data.get("profile_pic") else None
+        renter_profile_pic_data = sqlite3.Binary(profile_data.get("profile_pic")) if profile_data.get("profile_pic") else None
 
         cursor.execute("""
         INSERT INTO renter_profiles (
@@ -190,7 +189,7 @@ def save_renter_profile_to_db(user_id, profile_data):
             hobbies=excluded.hobbies,
             social_media=excluded.social_media
         """, (
-            profile_pic_data,
+            renter_profile_pic_data,
             user_id,
             profile_data.get("first_name"),
             profile_data.get("surname"),
@@ -429,6 +428,8 @@ def save_agent_profile_to_db(user_id, profile_data):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        agent_profile_pic_data = sqlite3.Binary(profile_data.get("agent_profile_pic")) if profile_data.get("agent_profile_pic") else None
+        
         cursor.execute("""
         INSERT INTO agent_profiles (
             agent_profile_pic, user_id, name, phone, agency_name, agency_address,
@@ -450,7 +451,7 @@ def save_agent_profile_to_db(user_id, profile_data):
             languages=excluded.languages,
             mission_statement=excluded.mission_statement
         """, (
-            profile_data.get("agent_profile_pic"),
+            agent_profile_pic_data,
             user_id,
             profile_data.get("name"),
             profile_data.get("phone"),
@@ -474,8 +475,15 @@ def save_agent_profile_to_db(user_id, profile_data):
         if agent_profile_id:
             return agent_profile_id[0]  # Return the agent_profile_id
         
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
     finally:
         conn.close()
+        
     return None  # Return None if no agent profile ID is found
 
 # Load agent profile from the database
@@ -494,3 +502,5 @@ def load_agent_profile_from_db(user_id):
 
     finally:
         conn.close()
+        
+# Save favorites

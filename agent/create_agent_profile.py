@@ -10,10 +10,16 @@ def create_agent_profile():
 
     # Collect agent's basic profile information
     with st.expander("Basic Information"):
-        name = st.text_input("Full Name:")
-        phone = st.text_input("Phone Number:")
         agent_profile_pic = st.file_uploader("Upload Profile Picture", type=["jpg", "jpeg", "png"], key="create_agent_profile_pic")
+        name = st.text_input("Full Name:")
         agency_name = st.text_input("Agency Name:")
+        phone = st.text_input("Phone Number:")
+        
+        # Phone number validation
+        if phone and (not phone.isdigit() or len(phone) not in (10, 12)):
+            st.error("Phone number must be 10 or 12 digits long and contain only numbers.")
+            return
+
         agency_address = st.text_input("Agency Address:")
         agency_website = st.text_input("Agency Website (optional):")
         social_media = st.text_input("Social Media Link (optional):")
@@ -30,7 +36,19 @@ def create_agent_profile():
     with st.expander("Additional Information"):
         mission_statement = st.text_area("Mission Statement (optional):")
 
+    # Save Profile Button
     if st.button("Save Profile"):
+        
+        # Mandatory field validation
+        if not name or not agency_name or not phone:
+            st.error("Full Name, Agency Name, and Phone Number are required fields.")
+            return
+        
+        # Profile picture size validation
+        if agent_profile_pic and agent_profile_pic.size > 5 * 1024 * 1024:
+            st.error("Profile picture size should be less than 5 MB.")
+            return
+        
         # Build the profile dictionary
         agent_profile = {
             "name": name,
@@ -49,11 +67,22 @@ def create_agent_profile():
         }
 
         # Save the profile to the database
+        st.session_state["agent_profile"] = agent_profile
         user_id = st.session_state["user_id"]
-        save_agent_profile_to_db(user_id, agent_profile)
         
-        st.success("Profile saved successfully!")
-        st.session_state["current_page"] = "dashboard"
+        with st.spinner("Saving Profile..."):
+            try:
+                agent_profile_id = save_agent_profile_to_db(user_id, agent_profile)
+                
+                if not agent_profile_id:
+                    st.error("Failed to save profile. Please try again.")
+                    return
+                
+                st.success("Profile saved successfully!")
+                st.session_state["current_page"] = "dashboard"
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+                print(f"Error: {e}")
         
 
 if __name__ == "__main__":
