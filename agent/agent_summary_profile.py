@@ -1,5 +1,6 @@
 import streamlit as st
 from database import load_user_from_db, load_agent_profile_from_db
+from navigation_buttons import home_button, back_button, log_out_button
 # agent_summary_profile
 def agent_summary_profile():
     
@@ -31,4 +32,6 @@ def agent_summary_profile():
             st.write(f"**Mission:** {agent_profile['mission_statement']}")
             st.write(f"**Services Offered:** {agent_profile['services']}")
 
+if __name__ == "__main__":
+    agent_summary_profile()
     

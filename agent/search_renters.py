@@ -16,6 +16,8 @@ def get_db_connection():
     return conn
 
 def search_renters():
+    
+    back_button()
     st.title("Search Renters")
 
     # Search filters

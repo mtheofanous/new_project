@@ -60,40 +60,14 @@ def agent_dashboard():
     st.write("Welcome to your dashboard! Here you can manage your profile, view listings, and interact with clients.")
     agent_summary_profile()
     
-    col1, col2, col3 = st.columns([1, 1, 1])
+    if st.sidebar.button("Search Renters", key="search_renters_button"):
+        st.session_state["current_page"] = "search_renters"
     
-    with col1:
-        if st.button("Search Renters", key="search_renters_button"):
-                    st.session_state["current_page"] = "search_renters"
-    
-    with col2:
-        if st.button("Manage Listings", key="listing_button"):
-                    st.session_state["current_page"] = "listing"
+    if st.sidebar.button("Manage Listings", key="listing_button"):
+        st.session_state["current_page"] = "listing"
                     
-    with col3:
-        if st.button("Manage Client Reviews", key="client_reviews_button"):
+    if st.sidebar.button("Manage Client Reviews", key="client_reviews_button"):
                     st.session_state["current_page"] = "client_reviews"
-                    
-    # show the listings of the agent
-    with st.expander("Your Listings"):
-        st.write("Here are the properties you have listed:")
-        # Sample properties (In a real scenario, fetch from a database)
-        properties = [
-            {"name": "Downtown Apartment", "price": 1200, "location": "Los Angeles, Downtown", "rooms": 2},
-            {"name": "Cozy Studio", "price": 900, "location": "Los Angeles, Westwood", "rooms": 1},
-            {"name": "Spacious Family Home", "price": 2500, "location": "Los Angeles, Beverly Hills", "rooms": 4}
-        ]
-
-        for property in properties:
-            st.write(f"**Name:** {property['name']}")
-            st.write(f"**Price:** ${property['price']} per month")
-            st.write(f"**Location:** {property['location']}")
-            st.write(f"**Rooms:** {property['rooms']}")
-            if st.button(f"View Details for {property['name']}", key=f"view_{property['name']}"):
-                st.info(f"Details for {property['name']} are not yet implemented.")
-            if st.button(f"View Client Reviews for {property['name']}", key=f"reviews_{property['name']}"):
-                st.info(f"Client reviews for {property['name']} are not yet implemented.")
-            st.markdown("---")
             
 def dashboard():
     # Ensure session state is initialized

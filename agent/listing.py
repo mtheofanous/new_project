@@ -24,7 +24,7 @@ def listing():
 
             url = st.text_input("Property URL:", placeholder="Enter the property URL here")
             if st.button("Generate Profile"):
-                if st.session_state["property_url"]:
+                if url: 
                     with st.spinner("Scraping data..."):
                         try:
                             property_data = scrape_data_to_dict(url)
