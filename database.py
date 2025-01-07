@@ -311,9 +311,7 @@ def save_rental_preferences_to_db(profile_id, preferences_data):
         conn.close()
 
 
-        
 # Load rental preferences from the database
-
 
 def load_rental_preferences_from_db(profile_id):
     """
@@ -503,4 +501,140 @@ def load_agent_profile_from_db(user_id):
     finally:
         conn.close()
         
-# Save favorites
+
+# Save property data to the database
+
+def save_property_to_db(property_data):
+    """
+    Save property data to the database.
+    :param property_data: Dictionary containing property details.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Insert the property
+        cursor.execute("""
+        INSERT INTO properties (
+            property_type, property_size, property_location, property_price,
+            price_per_sqm, bedrooms, bathrooms, floor, year_built, condition,
+            renovation_year, energy_class, availability, available_from,
+            heating_method, zone, creation_method
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            property_data.get("property_type"),
+            property_data.get("property_size"),
+            property_data.get("property_location"),
+            property_data.get("property_price"),
+            property_data.get("price_per_sqm"),
+            property_data.get("bedrooms"),
+            property_data.get("bathrooms"),
+            property_data.get("floor"),
+            property_data.get("year_built"),
+            property_data.get("condition"),
+            property_data.get("renovation_year"),
+            property_data.get("energy_class"),
+            property_data.get("availability"),
+            property_data.get("available_from"),
+            property_data.get("heating_method"),
+            property_data.get("zone"),
+            property_data.get("creation_method", "manual")
+        ))
+        conn.commit()
+        return cursor.lastrowid  #
+    # Return the ID of the newly created property
+    except sqlite3.IntegrityError as e:
+        # Provide more specific error details
+        raise ValueError(
+            "A property with these characteristics already exists. "
+            "Ensure that location, size, type, floor, and bedrooms are unique."
+        ) from e
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while saving property: {e}")
+    finally:
+        conn.close()
+        
+
+# Save the relationship between a property and a user (landlord or agent)
+
+def save_property_ownership(property_id, user_id, role):
+    """
+    Save the relationship between a property and a user (landlord or agent).
+    :param property_id: ID of the property.
+    :param user_id: ID of the landlord or agent.
+    :param role: Role of the user ('landlord' or 'agent').
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Check if ownership already exists
+        cursor.execute("""
+        SELECT 1 FROM property_ownership
+        WHERE property_id = ? AND user_id = ? AND role = ?
+        """, (property_id, user_id, role))
+        if cursor.fetchone():
+            return  # Relationship already exists, no need to insert
+        
+        # Insert ownership
+        cursor.execute("""
+        INSERT INTO property_ownership (property_id, user_id, role)
+        VALUES (?, ?, ?)
+        """, (property_id, user_id, role))
+        conn.commit()
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while saving property ownership: {e}")
+    finally:
+        conn.close()
+
+
+def load_properties_by_user(user_id, role=None):
+    """
+    Load properties associated with a specific user.
+    :param user_id: The ID of the user.
+    :param role: Optional role ('landlord' or 'agent') to filter by.
+    :return: List of property dictionaries.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = """
+        SELECT p.*
+        FROM properties p
+        INNER JOIN property_ownership po ON p.id = po.property_id
+        WHERE po.user_id = ?
+        """
+        params = [user_id]
+        if role:
+            query += " AND po.role = ?"
+            params.append(role)
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while loading properties for user: {e}")
+    finally:
+        conn.close()
+        
+
+def get_users_for_property(property_id):
+    """
+    Fetch users (landlords and agents) associated with a property.
+    :param property_id: The ID of the property.
+    :return: List of dictionaries containing user details and roles.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        query = """
+        SELECT u.username, u.email, po.role
+        FROM property_ownership po
+        JOIN users u ON po.user_id = u.id
+        WHERE po.property_id = ?
+        """
+        cursor.execute(query, (property_id,))
+        rows = cursor.fetchall()
+        return [{"username": row["username"], "email": row["email"], "role": row["role"]} for row in rows]
+    except Exception as e:
+        raise ValueError(f"Error loading users for property: {e}")
+    finally:
+        conn.close()

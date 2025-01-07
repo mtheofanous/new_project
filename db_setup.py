@@ -156,11 +156,49 @@ def create_tables():
     cursor.execute("""
     CREATE UNIQUE INDEX IF NOT EXISTS unique_user_id ON renter_credit_scores (user_id);
     """)
-
-    conn.commit()
-    conn.close()
-    print("Tables created successfully.")
     
+    # Properties Table (if not already created)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS properties (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        property_type TEXT NOT NULL,
+        property_size REAL NOT NULL,
+        property_location TEXT NOT NULL,
+        property_price REAL NOT NULL,
+        price_per_sqm REAL,
+        bedrooms INTEGER,
+        bathrooms INTEGER,
+        floor INTEGER,
+        year_built INTEGER,
+        condition TEXT,
+        renovation_year INTEGER,
+        energy_class TEXT,
+        availability TEXT,
+        available_from TEXT,
+        heating_method TEXT,
+        zone TEXT,
+        creation_method TEXT CHECK (creation_method IN ('manual', 'url')) NOT NULL DEFAULT 'manual',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(property_location, property_size, property_type, floor, bedrooms) -- Composite unique constraint
+    )
+    """)
+
+    # Relationship Table: Property Ownership
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS property_ownership (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        property_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        role TEXT CHECK (role IN ('landlord', 'agent')) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(property_id, user_id, role) -- Prevent duplicate ownership records
+    )
+    """)
+
+
     # Favorites Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS favorites (
