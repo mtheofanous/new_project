@@ -504,7 +504,7 @@ def load_agent_profile_from_db(user_id):
 
 # Save property data to the database
 
-def save_property_to_db(property_data):
+def save_property_to_db(property_data, user_id):
     """
     Save property data to the database.
     :param property_data: Dictionary containing property details.
@@ -518,8 +518,8 @@ def save_property_to_db(property_data):
             property_type, property_size, property_location, property_price,
             price_per_sqm, bedrooms, bathrooms, floor, year_built, condition,
             renovation_year, energy_class, availability, available_from,
-            heating_method, zone, creation_method
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            heating_method, zone, creation_method, user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             property_data.get("property_type"),
             property_data.get("property_size"),
@@ -537,7 +537,8 @@ def save_property_to_db(property_data):
             property_data.get("available_from"),
             property_data.get("heating_method"),
             property_data.get("zone"),
-            property_data.get("creation_method", "manual")
+            property_data.get("creation_method", "manual"),
+            user_id
         ))
         conn.commit()
         return cursor.lastrowid  #
@@ -636,5 +637,53 @@ def get_users_for_property(property_id):
         return [{"username": row["username"], "email": row["email"], "role": row["role"]} for row in rows]
     except Exception as e:
         raise ValueError(f"Error loading users for property: {e}")
+    finally:
+        conn.close()
+        
+def get_users_for_similar_properties(property_id):
+    """
+    Fetch users (landlords and agents) associated with properties having similar characteristics.
+    :param property_id: The ID of the reference property.
+    :return: List of dictionaries containing user details and roles.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Fetch the characteristics of the reference property
+        query = """
+        SELECT property_type, property_size, property_location, floor, bedrooms
+        FROM properties
+        WHERE id = ?
+        """
+        cursor.execute(query, (property_id,))
+        reference_property = cursor.fetchone()
+
+        if not reference_property:
+            raise ValueError(f"Property ID {property_id} not found.")
+
+        # Find all properties with the same characteristics
+        query = """
+        SELECT id FROM properties
+        WHERE property_type = ? AND property_size = ? AND property_location = ? AND floor = ? AND bedrooms = ?
+        """
+        cursor.execute(query, reference_property)
+        similar_property_ids = [row["id"] for row in cursor.fetchall()]
+
+        if not similar_property_ids:
+            return []
+
+        # Fetch users associated with the similar properties
+        query = """
+        SELECT u.username, u.email, po.role
+        FROM property_ownership po
+        JOIN users u ON po.user_id = u.id
+        WHERE po.property_id IN ({})
+        """.format(", ".join(["?"] * len(similar_property_ids)))  # Dynamically generate the placeholders
+        cursor.execute(query, similar_property_ids)
+        rows = cursor.fetchall()
+        return [{"username": row["username"], "email": row["email"], "role": row["role"]} for row in rows]
+
+    except Exception as e:
+        raise ValueError(f"Error loading users for similar properties: {e}")
     finally:
         conn.close()

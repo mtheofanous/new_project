@@ -1,7 +1,7 @@
 import streamlit as st
 from navigation_buttons import home_button, back_button, log_out_button
 from app.components.utils import scrape_data_to_dict
-from database import load_properties_by_user, save_property_ownership, save_property_to_db, get_users_for_property
+from database import load_properties_by_user, save_property_ownership, get_users_for_similar_properties,save_property_to_db, get_users_for_property
 from db_setup import get_db_connection
 import base64
 
@@ -53,9 +53,8 @@ def listing():
                                 "creation_method": "url"
                             }
                                                         
-                            property_id = save_property_to_db(property)                        
                             user_id = st.session_state.get("user_id")
-                            
+                            property_id = save_property_to_db(property, user_id) 
                             
                             if 'role' not in st.session_state:
                                 st.session_state["role"] = "agent"
@@ -125,8 +124,9 @@ def listing():
                     "creation_method": "manual"
                 }
                 
-                property_id = save_property_to_db(property)
+                
                 user_id = st.session_state.get("user_id")
+                property_id = save_property_to_db(property, user_id)
                 
                 if 'role' not in st.session_state:
                     st.session_state["role"] = "agent"
@@ -181,7 +181,7 @@ def listing():
                     st.write(f"**Floor:** {property.get('floor', 'N/A')}")
 
                     # Fetch and display associated users
-                    users = get_users_for_property(property['id'])
+                    users =  get_users_for_similar_properties(property['id'])
                     st.write(f"**Associated Users:**")
                     if users:
                         for user in users:

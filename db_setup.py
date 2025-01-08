@@ -161,6 +161,7 @@ def create_tables():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS properties (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
         property_type TEXT NOT NULL,
         property_size REAL NOT NULL,
         property_location TEXT NOT NULL,
@@ -180,7 +181,7 @@ def create_tables():
         creation_method TEXT CHECK (creation_method IN ('manual', 'url')) NOT NULL DEFAULT 'manual',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(property_location, property_size, property_type, floor, bedrooms) -- Composite unique constraint
+        UNIQUE(property_location, property_size, property_type, floor, bedrooms, user_id) -- Composite unique constraint
     )
     """)
 
