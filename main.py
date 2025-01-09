@@ -10,6 +10,7 @@ from agent.create_agent_profile import create_agent_profile
 from agent.edit_agent_profile import edit_agent_profile
 from agent.agent_full_profile import agent_full_profile
 from agent.agent_summary_profile import agent_summary_profile
+from agent.edit_property import edit_property_with_images
 from agent.search_renters import search_renters
 from agent.listing import listing
 from dashboard import dashboard
@@ -61,11 +62,13 @@ def main():
         agent_summary_profile()
     elif st.session_state["current_page"] == "search_renters":
         search_renters()
+        
     elif st.session_state["current_page"] == "rental_preferences":
         rental_preferences()
     elif st.session_state["current_page"] == "listing":
         listing()
-        
+    elif st.session_state["current_page"] == "edit_property":
+        edit_property_with_images()
     
 
 

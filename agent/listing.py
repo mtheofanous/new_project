@@ -1,8 +1,9 @@
 import streamlit as st
 from navigation_buttons import home_button, back_button, log_out_button
 from app.components.utils import scrape_data_to_dict
-from database import load_properties_by_user, save_property_ownership, get_users_for_similar_properties,save_property_to_db, get_users_for_property
+from database import * 
 from db_setup import get_db_connection
+from agent.edit_property import edit_property_with_images
 import base64
 
 def listing():
@@ -29,11 +30,15 @@ def listing():
                         try:
                             property_data = scrape_data_to_dict(url)
                             
+                            # images
+                            images = property_data.get('images', [])
+                            
                             characteristics = property_data.get('characteristics', {})
                             
                             st.success("Data scraped successfully!")
                             
                             property = {
+                                "friendly_name": property_data.get('friendly_name', 'No Friendly Name'),
                                 "property_type": property_data.get('property_type', 'No Property Type'), # cannot be None or empty 
                                 "property_size": property_data.get('property_size', 'No Property Size'),
                                 "property_location": property_data.get('property_location', 'No Property Location'),
@@ -54,7 +59,10 @@ def listing():
                             }
                                                         
                             user_id = st.session_state.get("user_id")
-                            property_id = save_property_to_db(property, user_id) 
+                            property_id = save_property_to_db(property, user_id)
+                            
+                            # save images
+                            save_property_image_to_db(property_id, user_id, images)
                             
                             if 'role' not in st.session_state:
                                 st.session_state["role"] = "agent"
@@ -69,7 +77,7 @@ def listing():
 
                             save_property_ownership(property_id, user_id, role)
                             st.success("Property saved successfully!")
-                            
+                                                     
                             # close the expander
                             st.session_state["expander_open"] = False
                             
@@ -86,6 +94,7 @@ def listing():
         elif choose_method == "Manual Input":
             
             # add manual input fields
+            friendly_name = st.text_input("Friendly Name:", placeholder="Enter the friendly name here")
             property_type = st.text_input("Property Type:", placeholder="Enter the property type here")
             property_size = st.text_input("Property Size:", placeholder="Enter the property size here")
             property_location = st.text_input("Property Location:", placeholder="Enter the property location here")
@@ -105,6 +114,7 @@ def listing():
             
             if st.button("Save Property"):
                 property = {
+                    "friendly_name": friendly_name,
                     "property_type": property_type,
                     "property_size": property_size,
                     "property_location": property_location,
@@ -128,6 +138,8 @@ def listing():
                 user_id = st.session_state.get("user_id")
                 property_id = save_property_to_db(property, user_id)
                 
+                save_property_image_to_db(property_id, user_id, images)
+                
                 if 'role' not in st.session_state:
                     st.session_state["role"] = "agent"
                 
@@ -143,103 +155,124 @@ def listing():
                 st.success("Property saved successfully!")
                 st.rerun()
                 # close the expander
-                st.session_state["expander_open"] = False
-            
+                st.session_state["expander_open"] = False             
+
+# Listing Page
+
+    # Header for Property Listing
     st.header("Property Listing")
 
-    # Display property listings for the current user
-    with st.expander("**Property Listing**"):
-        st.write("Here you can view and manage your property listings.")
-        
-        user_id = st.session_state.get("user_id")
-        if not user_id:
-            st.error("User not logged in.")
-            return
-        
-        if 'role' not in st.session_state:
-            st.session_state["role"] = "agent"
-        
-        role = st.session_state.get("role")
-        if role:
-            role = role.lower()
-        else:
-            raise ValueError("Role not set. Please set the role to 'landlord' or 'agent'.")
-        
-        properties = load_properties_by_user(user_id, role) 
+    # Check if user is logged in
+    user_id = st.session_state.get("user_id")
+    if not user_id:
+        st.error("User not logged in.")
+        return
 
-        try:
-            # properties = load_properties_by_user(user_id)
-            if not properties:
-                st.write("You have no properties listed yet.")
-            else:
-                for property in properties:
-                    st.write(f"**Type:** {property.get('property_type', 'N/A')}")
-                    st.write(f"**Location:** {property.get('property_location', 'N/A')}")
-                    st.write(f"**Price:** €{property.get('property_price', 'N/A')}")
-                    st.write(f"**Size:** {property.get('property_size', 'N/A')} sq.m.")
-                    st.write(f"**Bedrooms:** {property.get('bedrooms', 'N/A')}")
-                    st.write(f"**Floor:** {property.get('floor', 'N/A')}")
+    if "role" not in st.session_state:
+        st.session_state["role"] = "agent"
 
-                    # Fetch and display associated users
-                    users =  get_users_for_similar_properties(property['id'])
-                    st.write(f"**Associated Users:**")
-                    if users:
-                        for user in users:
-                            role_icon = "👨‍💼" if user["role"] == "agent" else "🏠"
-                            st.write(f"{role_icon} **{user['username']}** | **Email**: {user['email']} | **Role**: {user['role']}")
-                    else:
-                        st.write("No users associated with this property.")
-
-                    # Action buttons for properties
-                    # delete property
-                    if st.button(f"Delete Property ID {property['id']}", key=f"delete_{property['id']}"):
-                        st.info(f"Deleting Property ID {property['id']} is not yet implemented.")
+    role = st.session_state.get("role", "").lower()
+    if not role:
+        raise ValueError("Role not set. Please set the role to 'landlord' or 'agent'.")
   
-                    st.markdown("---")
+    # Load properties
+    properties = load_properties_by_user(user_id, role)
+    
+    # Display properties
+    def proper(column, prop):
+        property_images = prop.get('images', [])
+        columnas = st.columns([2,1,3])
+        
+        if property_images:
+            # First Image
+            first_image = property_images[0]
+            if first_image["src"]:
+                columnas[0].image(first_image["src"], output_format="auto", width=200)
+            elif first_image["blob"]:
+                columnas[0].image(first_image["blob"], output_format="auto", width=200)
+                
+            if f"view_more_images_{prop['id']}" not in st.session_state:
+                st.session_state[f"view_more_images_{prop['id']}"] = False
 
-        except Exception as e:
-            st.error(f"Error loading properties: {e}")
+            # Toggle Button
+            if columnas[1].button(
+                "🔍",
+                key=f"view_more_images_toggle_{prop['id']}"
+            ):
+                # Toggle the state
+                st.session_state[f"view_more_images_{prop['id']}"] = not st.session_state[f"view_more_images_{prop['id']}"]
 
+            # Conditional Display of Additional Images
+            if st.session_state[f"view_more_images_{prop['id']}"]:
+                additional_images = property_images[1:]  # Skip the main image
+                for i in range(0, len(additional_images), 3):  # Display 3 images per row
+                    additional_cols = st.columns(3)
+                    for img_col, img in zip(additional_cols, additional_images[i:i+3]):
+                        with img_col:
+                            if img["src"]:
+                                st.image(img["src"], width=150)
+                            elif img["blob"]:
+                                st.image(img["blob"], width=150)
+        
+
+        else:
+            st.write("No images available.")
+
+        # Property Details
+        columnas[1].markdown(f"<h3> {prop['friendly_name']}- {prop['property_type']} - {prop['property_location']}</h3>", unsafe_allow_html=True)
+        columnas[1].write(f"**Price:** €{round(prop.get('property_price', 'N/A'))}")
+        columnas[1].write(f"**Size:** {round(prop.get('property_size', 'N/A'))} sqm")
+        columnas[1].write(f"**Bedrooms:** {prop.get('bedrooms', 'N/A')}")
+        columnas[2].write(f"**Bathrooms:** {prop.get('bathrooms', 'N/A')}")
+        columnas[2].write(f"**Floor:** {prop.get('floor', 'N/A')}")
+        columnas[2].write(f"**Year Built:** {prop.get('year_built', 'N/A')}")
+
+        # View More Details
+        
+        with st.expander("📂", expanded=False):
+            st.write(f"**Condition:** {prop.get('condition', 'N/A')}")
+            st.write(f"**Renovation Year:** {prop.get('renovation_year', 'N/A')}")
+            st.write(f"**Energy Class:** {prop.get('energy_class', 'N/A')}")
+            st.write(f"**Availability:** {prop.get('availability', 'N/A')}")
+            st.write(f"**Available From:** {prop.get('available_from', 'N/A')}")
+            st.write(f"**Heating Method:** {prop.get('heating_method', 'N/A')}")
+            st.write(f"**Zone:** {prop.get('zone', 'N/A')}")
+
+            # Associated Users
+            users = get_users_for_similar_properties(prop["id"])
+            st.write("**Associated Users:**")
+            if users:
+                for user in users:
+                    role_icon = "👨‍💼 " if user["role"] == "agent" else "🏠 "
+            else:
+                st.write("No users associated with this property.")
+
+        # Action Button
+        if col[1].button(f"🗑️", key=f"delete_property_{prop['id']}"):
+            st.info(f"Deleting Property is not yet implemented.")
+            
+
+    # Display properties
+    if not properties:
+        st.write("You have no properties listed yet.")
+    else:
+        if len(properties) > 1:
+            additional_properties = properties[1:]
+            for p in range(0, len(additional_properties), 3):
+                
+                cols = st.columns(3)  # Create columns for properties
+                
+                for col, prop in zip(cols, additional_properties[p:p+3]):
+                    
+                    with col:
+                            
+                            col = st.columns([2, 1]) 
+                            col[0].markdown(f'<h3>{prop["property_type"]} - {prop["property_location"]}</h3>', unsafe_allow_html=True)
+                            proper(col, prop)
+                            
+                        # Property Images
+                        
+                    
 
 if __name__ == "__main__":
     listing()
-# def listing():
-    
-#     back_button()
-    
-#     property_generator()
-    
-#     st.title("Property Listing")
-    
-#     with st.expander("Property Listing"):
-#         st.write("Here you can view and manage your property listings.")
-#         user_id = st.session_state["user_id"]
-#         properties = load_properties_by_user(user_id)
-        
-#         if not properties:
-#             st.write("You have no properties listed yet.")
-#         else:
-#             for property in properties:
-#                 st.write(f"**Property ID:** {property['id']}")
-#                 st.write(f"**Name:** {property['name']}")
-#                 st.write(f"**Location:** {property['location']}")
-#                 st.write(f"**Price:** ${property['price']} per month")
-#                 st.write(f"**Rooms:** {property['rooms']}")
-#                 st.write(f"**Status:** {property['status']}")
-#                 users = get_users_for_property(property['id'])
-#                 st.write(f"**Users:**")
-#                 for user in users:
-#                     st.write(f"Username: {user['username']}, Email: {user['email']}, Role: {user['role']}")
-#                 if st.button(f"View Details for Property ID {property['id']}", key=f"view_{property['id']}"):
-#                     st.info(f"Details for Property ID {property['id']} are not yet implemented.")
-#                 if st.button(f"Edit Property ID {property['id']}", key=f"edit_{property['id']}"):
-#                     st.info(f"Editing Property ID {property['id']} is not yet implemented.")
-#                 st.markdown("---")
-    
-    
-    
-           
-    
-            
-# if __name__ == "__main__":
-#     listing()

@@ -19,7 +19,7 @@ def renter_dashboard():
     st.write("Welcome to your dashboard! Here you can manage your profile, send recommendations, and explore properties.")
     renter_summary_profile()
     
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2, col3, col4 = st.columns([1, 1, 1])
     
     with col1:
         if st.button("Rental Preferences", key="rental_preferences_button"):
@@ -31,6 +31,7 @@ def renter_dashboard():
     with col3:
         if st.button("Manage Credit Score", key="credit_score_button"):
                     st.session_state["current_page"] = "credit_score"
+    
                     
     # Available Properties
     with st.expander("Available Properties"):
@@ -60,12 +61,18 @@ def agent_dashboard():
     st.write("Welcome to your dashboard! Here you can manage your profile, view listings, and interact with clients.")
     agent_summary_profile()
     
+    user_id = st.session_state.get("user_id", None)
+    
     if st.sidebar.button("Search Renters", key="search_renters_button"):
         st.session_state["current_page"] = "search_renters"
     
     if st.sidebar.button("Manage Listings", key="listing_button"):
         st.session_state["current_page"] = "listing"
-                    
+        
+    if st.sidebar.button("Edit Property", key="edit_property_button"):
+        st.session_state["current_page"] = "edit_property"
+    
+                            
     if st.sidebar.button("Manage Client Reviews", key="client_reviews_button"):
                     st.session_state["current_page"] = "client_reviews"
             

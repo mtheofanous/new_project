@@ -206,14 +206,18 @@ def scrape_data_to_dict(url):
         except Exception as e:
             print(f"Error clicking button or loading images: {e}")
 
+        # Extract images with alt text containing the title text (case-insensitive) and unique src URLs
         unique_images = set()
         images = []
         for img in soup.find_all("img", alt=True):
             src = img.get("src")
             alt = img.get("alt")
-            if src not in unique_images:
-                unique_images.add(src)
-                images.append({"src": src, "alt": alt})
+            
+            if alt and title_text.lower() in alt.lower():
+                
+                if src not in unique_images:
+                    unique_images.add(src)
+                    images.append({"src": src, "alt": alt})
         data_dict['images'] = images
 
         return data_dict

@@ -2,6 +2,8 @@ from db_setup import get_db_connection
 from app.components.utils import hash_password  # Assuming you have the hash_password function in utils.py
 import sqlite3
 import streamlit as st
+import json
+
 
 def save_user_to_db(username, email, password):
     """
@@ -515,12 +517,13 @@ def save_property_to_db(property_data, user_id):
         # Insert the property
         cursor.execute("""
         INSERT INTO properties (
-            property_type, property_size, property_location, property_price,
+            friendly_name, property_type, property_size, property_location, property_price,
             price_per_sqm, bedrooms, bathrooms, floor, year_built, condition,
             renovation_year, energy_class, availability, available_from,
             heating_method, zone, creation_method, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
+            property_data.get("friendly_name"),
             property_data.get("property_type"),
             property_data.get("property_size"),
             property_data.get("property_location"),
@@ -554,7 +557,34 @@ def save_property_to_db(property_data, user_id):
     finally:
         conn.close()
         
+# SAVE PROPERTY IMAGES TO THE DATABASE
 
+def save_property_image_to_db(property_id, user_id, images):
+    """
+    Save property images (URLs or binary data) to the database.
+    :param property_id: ID of the associated property.
+    :param user_id: ID of the user uploading the images.
+    :param images: List of dictionaries containing 'src' or 'blob'.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        for image in images:
+            cursor.execute("""
+                INSERT INTO property_images (property_id, user_id, image_src, image_blob)
+                VALUES (?, ?, ?, ?)
+            """, (
+                property_id,
+                user_id,
+                image.get("src"),
+                image.get("blob"),
+            ))
+        conn.commit()
+    except sqlite3.Error as e:
+        raise ValueError(f"Error saving property images: {e}")
+    finally:
+        conn.close()
+        
 # Save the relationship between a property and a user (landlord or agent)
 
 def save_property_ownership(property_id, user_id, role):
@@ -585,20 +615,157 @@ def save_property_ownership(property_id, user_id, role):
         raise ValueError(f"Database error while saving property ownership: {e}")
     finally:
         conn.close()
+        
 
+# Load properties by user ID
+import sqlite3
+from db_setup import get_db_connection
 
-def load_properties_by_user(user_id, role=None):
+def load_property_by_id(property_id):
     """
-    Load properties associated with a specific user.
-    :param user_id: The ID of the user.
-    :param role: Optional role ('landlord' or 'agent') to filter by.
-    :return: List of property dictionaries.
+    Load a property by its ID.
+    :param property_id: ID of the property to load.
+    :return: A dictionary containing property details, or None if not found.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        SELECT id, friendly_name, property_type, property_size, property_location, property_price, 
+               price_per_sqm, bedrooms, bathrooms, floor, year_built, condition,
+               renovation_year, energy_class, availability, available_from,
+               heating_method, zone
+        FROM properties
+        WHERE id = ?
+        """, (property_id,))
+        property_data = cursor.fetchone()
+
+        if property_data:
+            return dict(property_data)
+        return None
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while loading property: {e}")
+    finally:
+        conn.close()
+
+def update_property_in_db(property_id, updated_data, user_id):
+    """
+    Update property details in the database.
+    :param property_id: ID of the property to update.
+    :param updated_data: Dictionary containing updated property details.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        UPDATE properties
+        SET friendly_name = ?, property_type = ?, property_size = ?, property_location = ?, 
+            property_price = ?, price_per_sqm = ?, bedrooms = ?, bathrooms = ?, 
+            floor = ?, year_built = ?, condition = ?, renovation_year = ?, 
+            energy_class = ?, availability = ?, available_from = ?, 
+            heating_method = ?, zone = ?, creation_method = ?
+        WHERE id = ?
+        """, (
+            updated_data.get("friendly_name"),
+            updated_data.get("property_type"),
+            updated_data.get("property_size"),
+            updated_data.get("property_location"),
+            updated_data.get("property_price"),
+            updated_data.get("price_per_sqm"),
+            updated_data.get("bedrooms"),
+            updated_data.get("bathrooms"),
+            updated_data.get("floor"),
+            updated_data.get("year_built"),
+            updated_data.get("condition"),
+            updated_data.get("renovation_year"),
+            updated_data.get("energy_class"),
+            updated_data.get("availability"),
+            updated_data.get("available_from"),
+            updated_data.get("heating_method"),
+            updated_data.get("zone"),
+            updated_data.get("creation_method", "manual"),
+            property_id,
+            user_id 
+        ))
+        conn.commit()
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while updating property: {e}")
+    finally:
+        conn.close()
+
+def load_property_images(property_id):
+    """
+    Load property images for a given property ID.
+    :param property_id: ID of the property to load images for.
+    :return: A list of image dictionaries, or an empty list if no images are found.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        cursor.execute("""
+        SELECT image_src, image_blob
+        FROM property_images
+        WHERE property_id = ?
+        """, (property_id,))
+        rows = cursor.fetchall()
+        images = [{"src": row["image_src"], "blob": row["image_blob"]} for row in rows]
+        return images
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while loading property images: {e}")
+    finally:
+        conn.close()
+        
+def replace_property_images(property_id, user_id, images):
+    """
+    Replace all images for a given property.
+    :param property_id: ID of the property.
+    :param user_id: ID of the user uploading the images.
+    :param images: List of dictionaries containing 'src' or 'blob'.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Delete existing images for the property
+        cursor.execute("""
+        DELETE FROM property_images WHERE property_id = ?
+        """, (property_id,))
+        
+        # Insert new images
+        for image in images:
+            cursor.execute("""
+            INSERT INTO property_images (property_id, user_id, image_src, image_blob)
+            VALUES (?, ?, ?, ?)
+            """, (
+                property_id,
+                user_id,
+                image.get("src"),
+                image.get("blob"),
+            ))
+        conn.commit()
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while replacing property images: {e}")
+    finally:
+        conn.close()
+
+
+
+def load_properties_by_user(user_id, role=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
         query = """
-        SELECT p.*
+        SELECT p.*, (
+            SELECT json_group_array(
+                json_object(
+                    'src', COALESCE(pi.image_src, ''),
+                    'blob', COALESCE(pi.image_blob, '')
+                )
+            )
+            FROM property_images pi
+            WHERE pi.property_id = p.id
+        ) AS images
         FROM properties p
         INNER JOIN property_ownership po ON p.id = po.property_id
         WHERE po.user_id = ?
@@ -610,35 +777,23 @@ def load_properties_by_user(user_id, role=None):
         
         cursor.execute(query, params)
         rows = cursor.fetchall()
-        return [dict(row) for row in rows]
+        properties = []
+        for row in rows:
+            property_data = dict(row)
+            # Parse the images JSON string
+            if property_data.get("images"):
+                property_data["images"] = json.loads(property_data["images"])
+            else:
+                property_data["images"] = []  # Default to an empty list if no images
+            properties.append(property_data)
+        return properties
     except sqlite3.Error as e:
         raise ValueError(f"Database error while loading properties for user: {e}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Error decoding JSON for property images: {e}")
     finally:
         conn.close()
-        
 
-def get_users_for_property(property_id):
-    """
-    Fetch users (landlords and agents) associated with a property.
-    :param property_id: The ID of the property.
-    :return: List of dictionaries containing user details and roles.
-    """
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        query = """
-        SELECT u.username, u.email, po.role
-        FROM property_ownership po
-        JOIN users u ON po.user_id = u.id
-        WHERE po.property_id = ?
-        """
-        cursor.execute(query, (property_id,))
-        rows = cursor.fetchall()
-        return [{"username": row["username"], "email": row["email"], "role": row["role"]} for row in rows]
-    except Exception as e:
-        raise ValueError(f"Error loading users for property: {e}")
-    finally:
-        conn.close()
         
 def get_users_for_similar_properties(property_id):
     """

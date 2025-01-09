@@ -162,6 +162,7 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS properties (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
+        friendly_name TEXT,
         property_type TEXT NOT NULL,
         property_size REAL NOT NULL,
         property_location TEXT NOT NULL,
@@ -182,6 +183,20 @@ def create_tables():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(property_location, property_size, property_type, floor, bedrooms, user_id) -- Composite unique constraint
+    )
+    """)
+    
+    # property images table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS property_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        property_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        image_src TEXT DEFAULT NULL,
+        image_blob BLOB DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     """)
 
