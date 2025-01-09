@@ -67,6 +67,7 @@ def edit_property_with_images():
 
         # Editable form
         with st.form("edit_property_form"):
+            friendly_name = st.text_input("Friendly Name", value=selected_property.get("friendly_name", ""))
             property_type = st.text_input("Property Type", value=selected_property.get("property_type", ""))
             property_size = st.text_input("Property Size", value=round(selected_property.get("property_size", "")))
             property_location = st.text_input("Property Location", value=selected_property.get("property_location", ""))
@@ -93,6 +94,7 @@ def edit_property_with_images():
         # Handle Form Submission
         if submit_button:
             updated_property = {
+                "friendly_name": friendly_name,
                 "property_type": property_type,
                 "property_size": property_size,
                 "property_location": property_location,
