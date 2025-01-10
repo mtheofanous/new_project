@@ -3,8 +3,9 @@ from navigation_buttons import home_button, back_button, log_out_button
 from app.components.utils import scrape_data_to_dict
 from database import * 
 from db_setup import get_db_connection
-from agent.edit_property import edit_property_with_images
+from agent.display_property import display_property
 import base64
+
 
 def listing():
     
@@ -35,21 +36,29 @@ def listing():
                             
                             characteristics = property_data.get('characteristics', {})
                             
+                            # floor
+                            floor = characteristics['Floor'] if 'Floor' in characteristics else None
+                            
+                            floor = floor.replace("st", "").replace("nd", "").replace("rd", "").replace("th", "").strip()
+                            floor = int(floor) if floor else None
+                            
                             st.success("Data scraped successfully!")
+        
                             
                             property = {
+                                
                                 "friendly_name": property_data.get('friendly_name', 'No Friendly Name'),
                                 "property_type": property_data.get('property_type', 'No Property Type'), # cannot be None or empty 
-                                "property_size": property_data.get('property_size', 'No Property Size'),
+                                "property_size": property_data.get('property_size', 0.0) if property_data.get('property_size') else 0.0,
                                 "property_location": property_data.get('property_location', 'No Property Location'),
-                                "property_price": property_data.get('property_price', 'No Property Price'),
-                                "price_per_sqm": property_data.get('price_per_sqm', 'N/A'),
-                                "bedrooms": characteristics.get('Bedrooms', 'N/A'),
-                                "bathrooms": characteristics.get('Bathrooms', 'N/A'),
-                                "floor": characteristics.get('Floor', 'N/A'),
-                                "year_built": characteristics.get('Year Built', 'N/A'),
+                                "property_price": property_data.get('property_price', 0.0) if property_data.get('property_price') else 0.0,
+                                "price_per_sqm": property_data.get('price_per_sqm', 0.0) if property_data.get('price_per_sqm') else 0.0,
+                                "bedrooms": characteristics.get('Bedrooms', 0) if characteristics.get('Bedrooms') else 0,
+                                "bathrooms": characteristics.get('Bathrooms', 0) if characteristics.get('Bathrooms') else 0,
+                                "floor": floor,
+                                "year_built": characteristics.get('Year Built', 1990) if characteristics.get('Year Built') else 1990,
                                 "condition": characteristics.get('Condition', 'N/A'),
-                                "renovation_year": characteristics.get('Renovation Year', 'N/A'),
+                                "renovation_year": characteristics.get('Renovation Year', 2000) if characteristics.get('Renovation Year') else 2000,
                                 "energy_class": characteristics.get('Energy Class', 'N/A'),
                                 "availability": characteristics.get('Availability', 'N/A'),
                                 "available_from": characteristics.get('Available From', 'N/A'),
@@ -161,7 +170,14 @@ def listing():
 
     # Header for Property Listing
     st.header("Property Listing")
-
+    columnas_values = ["**NICKNAME**", "**TYPE**", "**LOCATION**", "**PRICE**", "**SIZE**", "**BEDROOMS**",
+                       "**BATHROOMS**", "**FLOOR**", "**YEAR BUILT**", "**CONDITION**", 
+                       "**RENOVATION**", "**ENERGY CLASS**", "**AVAILABILITY**", "**FROM**", 
+                       "**HEATING**", "**ZONE**"]
+    columnas = st.columns(len(columnas_values) + 3)
+    for col, value in zip(columnas, columnas_values):
+        col.write(value)
+        
     # Check if user is logged in
     user_id = st.session_state.get("user_id")
     if not user_id:
@@ -177,102 +193,15 @@ def listing():
   
     # Load properties
     properties = load_properties_by_user(user_id, role)
-    
-    # Display properties
-    def proper(column, prop):
-        property_images = prop.get('images', [])
-        columnas = st.columns([2,1,3])
-        
-        if property_images:
-            # First Image
-            first_image = property_images[0]
-            if first_image["src"]:
-                columnas[0].image(first_image["src"], output_format="auto", width=200)
-            elif first_image["blob"]:
-                columnas[0].image(first_image["blob"], output_format="auto", width=200)
-                
-            if f"view_more_images_{prop['id']}" not in st.session_state:
-                st.session_state[f"view_more_images_{prop['id']}"] = False
-
-            # Toggle Button
-            if columnas[1].button(
-                "🔍",
-                key=f"view_more_images_toggle_{prop['id']}"
-            ):
-                # Toggle the state
-                st.session_state[f"view_more_images_{prop['id']}"] = not st.session_state[f"view_more_images_{prop['id']}"]
-
-            # Conditional Display of Additional Images
-            if st.session_state[f"view_more_images_{prop['id']}"]:
-                additional_images = property_images[1:]  # Skip the main image
-                for i in range(0, len(additional_images), 3):  # Display 3 images per row
-                    additional_cols = st.columns(3)
-                    for img_col, img in zip(additional_cols, additional_images[i:i+3]):
-                        with img_col:
-                            if img["src"]:
-                                st.image(img["src"], width=150)
-                            elif img["blob"]:
-                                st.image(img["blob"], width=150)
-        
-
-        else:
-            st.write("No images available.")
-
-        # Property Details
-        columnas[1].markdown(f"<h3> {prop['friendly_name']}- {prop['property_type']} - {prop['property_location']}</h3>", unsafe_allow_html=True)
-        columnas[1].write(f"**Price:** €{round(prop.get('property_price', 'N/A'))}")
-        columnas[1].write(f"**Size:** {round(prop.get('property_size', 'N/A'))} sqm")
-        columnas[1].write(f"**Bedrooms:** {prop.get('bedrooms', 'N/A')}")
-        columnas[2].write(f"**Bathrooms:** {prop.get('bathrooms', 'N/A')}")
-        columnas[2].write(f"**Floor:** {prop.get('floor', 'N/A')}")
-        columnas[2].write(f"**Year Built:** {prop.get('year_built', 'N/A')}")
-
-        # View More Details
-        
-        with st.expander("📂", expanded=False):
-            st.write(f"**Condition:** {prop.get('condition', 'N/A')}")
-            st.write(f"**Renovation Year:** {prop.get('renovation_year', 'N/A')}")
-            st.write(f"**Energy Class:** {prop.get('energy_class', 'N/A')}")
-            st.write(f"**Availability:** {prop.get('availability', 'N/A')}")
-            st.write(f"**Available From:** {prop.get('available_from', 'N/A')}")
-            st.write(f"**Heating Method:** {prop.get('heating_method', 'N/A')}")
-            st.write(f"**Zone:** {prop.get('zone', 'N/A')}")
-
-            # Associated Users
-            users = get_users_for_similar_properties(prop["id"])
-            st.write("**Associated Users:**")
-            if users:
-                for user in users:
-                    role_icon = "👨‍💼 " if user["role"] == "agent" else "🏠 "
-            else:
-                st.write("No users associated with this property.")
-
-        # Action Button
-        if col[1].button(f"🗑️", key=f"delete_property_{prop['id']}"):
-            st.info(f"Deleting Property is not yet implemented.")
             
-
     # Display properties
     if not properties:
         st.write("You have no properties listed yet.")
     else:
-        if len(properties) > 1:
-            additional_properties = properties[1:]
-            for p in range(0, len(additional_properties), 3):
-                
-                cols = st.columns(3)  # Create columns for properties
-                
-                for col, prop in zip(cols, additional_properties[p:p+3]):
-                    
-                    with col:
-                            
-                            col = st.columns([2, 1]) 
-                            col[0].markdown(f'<h3>{prop["property_type"]} - {prop["property_location"]}</h3>', unsafe_allow_html=True)
-                            proper(col, prop)
-                            
-                        # Property Images
-                        
-                    
+        for property in properties:
+            display_property(property)
+
+                                            
 
 if __name__ == "__main__":
     listing()

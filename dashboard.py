@@ -68,10 +68,7 @@ def agent_dashboard():
     
     if st.sidebar.button("Manage Listings", key="listing_button"):
         st.session_state["current_page"] = "listing"
-        
-    if st.sidebar.button("Edit Property", key="edit_property_button"):
-        st.session_state["current_page"] = "edit_property"
-    
+            
                             
     if st.sidebar.button("Manage Client Reviews", key="client_reviews_button"):
                     st.session_state["current_page"] = "client_reviews"

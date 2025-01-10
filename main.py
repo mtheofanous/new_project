@@ -11,6 +11,7 @@ from agent.edit_agent_profile import edit_agent_profile
 from agent.agent_full_profile import agent_full_profile
 from agent.agent_summary_profile import agent_summary_profile
 from agent.edit_property import edit_property_with_images
+from agent.preview_property import preview_property
 from agent.search_renters import search_renters
 from agent.listing import listing
 from dashboard import dashboard
@@ -18,6 +19,8 @@ from renter.recommendations.recommendation import recommendation
 from renter.credit_score.credit_score import credit_score
 from renter.rental_preferences import rental_preferences
 from settings import profile_settings
+
+
 
 def main():
     # Ensure database tables are created
@@ -69,6 +72,12 @@ def main():
         listing()
     elif st.session_state["current_page"] == "edit_property":
         edit_property_with_images()
+    elif st.session_state["current_page"] == "preview_property":
+        selected_property = st.session_state.get("selected_property", None)
+        if selected_property:
+            preview_property(selected_property)
+        else:
+            st.error("No property selected for preview.")
     
 
 

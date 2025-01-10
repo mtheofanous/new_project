@@ -635,7 +635,7 @@ def load_property_by_id(property_id):
         SELECT id, friendly_name, property_type, property_size, property_location, property_price, 
                price_per_sqm, bedrooms, bathrooms, floor, year_built, condition,
                renovation_year, energy_class, availability, available_from,
-               heating_method, zone
+               heating_method, zone, creation_method
         FROM properties
         WHERE id = ?
         """, (property_id,))
@@ -686,7 +686,6 @@ def update_property_in_db(property_id, updated_data, user_id):
             updated_data.get("heating_method"),
             updated_data.get("zone"),
             updated_data.get("creation_method", "manual"),
-            property_id,
             user_id 
         ))
         conn.commit()
@@ -694,6 +693,22 @@ def update_property_in_db(property_id, updated_data, user_id):
         raise ValueError(f"Database error while updating property: {e}")
     finally:
         conn.close()
+        
+def delete_property_from_db(property_id):
+    """
+    Delete a property from the database.
+    :param property_id: ID of the property to delete.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM properties WHERE id = ?", (property_id,))
+        conn.commit()
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while deleting property: {e}")
+    finally:
+        conn.close()
+        
 
 def load_property_images(property_id):
     """
@@ -716,6 +731,8 @@ def load_property_images(property_id):
         raise ValueError(f"Database error while loading property images: {e}")
     finally:
         conn.close()
+        
+
         
 def replace_property_images(property_id, user_id, images):
     """
@@ -759,8 +776,7 @@ def load_properties_by_user(user_id, role=None):
         SELECT p.*, (
             SELECT json_group_array(
                 json_object(
-                    'src', COALESCE(pi.image_src, ''),
-                    'blob', COALESCE(pi.image_blob, '')
+                    'src', COALESCE(pi.image_src, '')
                 )
             )
             FROM property_images pi
@@ -787,10 +803,33 @@ def load_properties_by_user(user_id, role=None):
                 property_data["images"] = []  # Default to an empty list if no images
             properties.append(property_data)
         return properties
+    
     except sqlite3.Error as e:
         raise ValueError(f"Database error while loading properties for user: {e}")
     except json.JSONDecodeError as e:
         raise ValueError(f"Error decoding JSON for property images: {e}")
+    finally:
+        conn.close()
+        
+
+# Load property images including BLOBs
+def load_property_images_with_blobs(property_id):
+    """
+    Load property images including BLOBs.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+        SELECT image_src, image_blob
+        FROM property_images
+        WHERE property_id = ?
+        """, (property_id,))
+        rows = cursor.fetchall()
+        images = [{"src": row["image_src"], "blob": row["image_blob"]} for row in rows]
+        return images
+    except sqlite3.Error as e:
+        raise ValueError(f"Database error while loading property images with blobs: {e}")
     finally:
         conn.close()
 
