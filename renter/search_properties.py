@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
 from navigation_buttons import home_button, back_button
-from database import load_renter_profile_from_db, load_rental_preferences_from_db, load_property_by_id, load_property_images, get_users_for_similar_properties
+from database import update_rental_preferences
 from queries.filters import find_matching_properties_dict
 from renter.renter_display_property import renter_display_property
 # initialize session state rental_preferences
@@ -13,6 +13,12 @@ def search_properties():
     back_button()
     
     rental_preferences = st.session_state.get("rental_preferences")
+    
+    user_id = st.session_state.get("user_id")
+    
+    profile_id = st.session_state.get("profile_id")
+    
+    # profile
     
     # start with the filter options for the properties (budget_min, budget_max, property_type, property_size_min, property_size_max, bedrooms, bathrooms, floor)
     st.write("**Filter Options:**")
@@ -102,6 +108,16 @@ def search_properties():
     }
     st.session_state["rental_preferences"] = filter_options
     
+    # button to update rental preferences
+
+    choose = st.selectbox("Update Rental Preferences", ["No", "Yes"])
+        
+    if choose == "Yes":
+        update_rental_preferences(profile_id, filter_options)
+        st.success("Rental preferences updated successfully.")
+    else:
+        pass
+    
     # get the properties based on the filter options
     properties = find_matching_properties_dict(filter_options)
 
@@ -113,8 +129,8 @@ def search_properties():
         
         columnas_values = ["**TYPE**", "**LOCATION**", "**PRICE**", "**SIZE**", "**BEDROOMS**",
                     "**BATHROOMS**", "**FLOOR**", "**YEAR BUILT**", "**CONDITION**", 
-                    "**RENOVATION**", "**ENERGY CLASS**", "**AVAILABILITY**", "**FROM**", 
-                    "**HEATING**", "**ZONE**"]
+                    "**RENOVATION**", "**AVAILABILITY**", "**FROM**"
+                    ]
         columnas = st.columns(len(columnas_values) + 3)
         columnas[0].write("")
         for col, value in zip(columnas[1:], columnas_values):

@@ -24,7 +24,7 @@ def renter_full_profile():
     with col1:
         if renter_profile["profile_pic"]:
             st.image(renter_profile["profile_pic"], width=200)
-        st.markdown(f"##### **Name:** {renter_profile['first_name']} {renter_profile['surname']}")
+        st.markdown(f"##### **Name:** {renter_profile['first_name']} {renter_profile['last_name']}")
         st.markdown(f"##### **Email:** {email}")
         st.markdown(f"##### **Age:** {renter_profile['age']}")
         st.markdown(f"##### **Phone:** {renter_profile['phone']}")

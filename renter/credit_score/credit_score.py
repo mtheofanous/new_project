@@ -3,16 +3,23 @@ from database import save_credit_score
 from navigation_buttons import back_button 
 
 import streamlit as st
-from database import save_credit_score
+from database import save_credit_score, delete_credit_score, load_credit_scores
 
 def credit_score():
     back_button()
     """Manage credit score workflow"""
 
+    # load the current user's credit score
+    credit_score = load_credit_scores(user_id=st.session_state["user_id"])
     # Initialize session state variables
-    st.session_state.setdefault("authorized", False)
-    st.session_state.setdefault("uploaded_file", None)
-    st.session_state.setdefault("status", "Not Verified")
+    if credit_score:
+        st.session_state.setdefault("authorized", credit_score["authorized"])
+        st.session_state.setdefault("uploaded_file", credit_score["uploaded_file"])
+        st.session_state.setdefault("status", credit_score["status"])
+    else:
+        st.session_state.setdefault("authorized", False)
+        st.session_state.setdefault("uploaded_file", None)
+        st.session_state.setdefault("status", "Not Verified")
 
     st.title("Credit Score Management")
     st.write("Manage your credit score effectively by following these steps:")
@@ -41,7 +48,7 @@ def credit_score():
             st.warning("You must authorize communication to proceed.")
 
     # Allow File Upload if Authorized
-    if st.session_state["authorized"] or st.session_state["uploaded_file"]:
+    if st.session_state["authorized"] and not st.session_state["uploaded_file"] and st.session_state["status"] == "Not Verified":
         st.write("### Upload Your Credit Score")
         uploaded_file = st.file_uploader("Upload your Credit Score (PDF format)", type=["pdf"])
 
@@ -57,14 +64,24 @@ def credit_score():
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("Delete Credit Score"):
+                        delete_credit_score()
                         st.session_state["uploaded_file"] = None
                         st.session_state["status"] = "Not Verified"
-                        st.session_state["authorized"] = False
-                        st.success("Credit score deleted successfully.")
-                with col2:
-                    if st.button("Verify Credit Score"):
-                        st.session_state["status"] = "Verified"
-                        st.success("Credit score verified successfully.")
+                        st.warning("Credit score deleted successfully.")
+                        st.rerun()
+    else:
+        st.header("Manage Your Credit Score")
+        st.write(f"### Credit Status: {st.session_state['status']}")
+        with st.expander("Manage Your Uploaded Credit Score"):
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Delete Credit Score"):
+                    delete_credit_score()
+                    st.session_state["uploaded_file"] = None
+                    st.session_state["status"] = "Not Verified"
+                    st.warning("Credit score deleted successfully.")
+                    st.rerun()
+ 
 
 
     # Save credit score to database

@@ -350,6 +350,83 @@ def delete_property_interest(property_id, user_id):
 
     finally:
         conn.close()
+        
+def update_renter_interest_status(property_id, user_id, status):
+    """
+    Update the status of a renter's interest in a property.
+
+    :param property_id: The ID of the property.
+    :param user_id: The ID of the renter.
+    :param status: The new status ('Accepted' or 'Rejected').
+    :return: bool: True if the update was successful, False otherwise.
+    """
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.cursor()
+
+        # Ensure the status is either 'Accepted' or 'Rejected'
+        if status not in ['Accepted', 'Rejected']:
+            raise ValueError("Status must be 'Accepted' or 'Rejected'.")
+
+        # Update the status in the property_interest table
+        cursor.execute("""
+        UPDATE property_interest
+        SET status = ?
+        WHERE property_id = ? AND user_id = ?
+        """, (status, property_id, user_id))
+
+        if cursor.rowcount > 0:
+            conn.commit()
+            print(f"Status for user_id {user_id} on property_id {property_id} updated to '{status}'.")
+            return True
+        else:
+            print(f"No interest found for user_id {user_id} on property_id {property_id}.")
+            return False
+
+    except sqlite3.Error as e:
+        conn.rollback()  # Rollback changes on error
+        print(f"Error updating status for user_id {user_id} on property_id {property_id}: {e}")
+        return False
+
+    finally:
+        conn.close()
+
+def load_renters_by_interest_status(property_id, status):
+    """
+    Load all renters who have a specific status for a given property.
+
+    :param property_id: The ID of the property.
+    :param status: The status to filter by ('Pending', 'Accepted', or 'Rejected').
+    :return: list: A list of renter user IDs with the specified status.
+    """
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.cursor()
+
+        # Query renters with the specified status
+        cursor.execute("""
+        SELECT user_id
+        FROM property_interest
+        WHERE property_id = ? AND status = ?
+        """, (property_id, status))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        # Extract user IDs from the rows
+        user_ids = [row[0] for row in rows]
+        print(f"{len(user_ids)} renters with status '{status}' found for property_id {property_id}.")
+        return user_ids
+
+    except sqlite3.Error as e:
+        print(f"Error loading renters with status '{status}' for property_id {property_id}: {e}")
+        return []
+
+    finally:
+        conn.close()
+
 
 
 def has_expressed_interest(property_id, user_id):
@@ -368,6 +445,42 @@ def has_expressed_interest(property_id, user_id):
 
     finally:
         conn.close()
+        
+def load_renter_ids_for_property(property_id):
+    """
+    Load all user IDs of renters who have expressed interest in a specific property.
+
+    :param property_id: The ID of the property.
+    :return: A list of user IDs.
+    """
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.cursor()
+
+        # Query to fetch user IDs
+        cursor.execute("""
+        SELECT user_id
+        FROM property_interest
+        WHERE property_id = ?
+        """, (property_id,))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        # Extract user IDs from the rows
+        user_ids = [row[0] for row in rows]
+
+        print(f"{len(user_ids)} renters found for property_id {property_id}.")
+        return user_ids
+
+    except sqlite3.Error as e:
+        print(f"Error loading renter IDs for property_id {property_id}: {e}")
+        return []
+
+    finally:
+        conn.close()
+
 
 
 def save_rental_preferences_to_db(profile_id, preferences_data):
@@ -493,6 +606,45 @@ def load_rental_preferences_from_db(profile_id):
 
     finally:
         conn.close()
+        
+def update_rental_preferences(profile_id, filter_options):
+    """
+    Update rental preferences for a specific profile ID based on the given filter options.
+
+    :param profile_id: The profile ID associated with the rental preferences.
+    :param filter_options: A dictionary containing the fields to update and their new values.
+    """
+    conn = get_db_connection()
+    
+    try:
+        cursor = conn.cursor()
+
+        # Generate SQL dynamically based on provided filter options
+        set_clause = ", ".join([f"{key} = ?" for key in filter_options.keys()])
+        values = list(filter_options.values())
+        values.append(profile_id)  # Add profile_id at the end for the WHERE clause
+
+        query = f"""
+        UPDATE rental_preferences
+        SET {set_clause}
+        WHERE profile_id = ?
+        """
+
+        cursor.execute(query, values)
+        conn.commit()
+
+        if cursor.rowcount > 0:
+            print(f"Rental preferences for profile_id {profile_id} updated successfully.")
+        else:
+            print(f"No rental preferences found for profile_id {profile_id}.")
+
+    except sqlite3.Error as e:
+        conn.rollback()  # Rollback if an error occurs
+        raise ValueError(f"Database error while updating rental preferences: {e}")
+
+    finally:
+        conn.close()
+
 
 def save_credit_score(user_id, status, authorized, uploaded_file):
     """Save a renter's credit score to the database."""
@@ -567,6 +719,165 @@ def load_credit_scores(user_id=None):
     except Exception as e:
         print(f"Error loading credit scores: {e}")
         return None if user_id else []
+    
+def delete_credit_score(user_id=None):
+    """
+    Delete renter credit score(s) from the database.
+
+    Args:
+        user_id (int, optional): User ID to filter by. If None, deletes all credit scores.
+    
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if user_id:
+            # Delete specific user's credit score
+            cursor.execute(
+                """
+                DELETE FROM renter_credit_scores
+                WHERE user_id = ?
+                """,
+                (user_id,)
+            )
+            if cursor.rowcount > 0:
+                print(f"Credit score for user_id {user_id} deleted successfully.")
+            else:
+                print(f"No credit score found for user_id {user_id}.")
+        else:
+            # Delete all credit scores
+            cursor.execute("DELETE FROM renter_credit_scores")
+            print("All credit scores deleted successfully.")
+
+        conn.commit()
+        conn.close()
+        return True
+
+    except Exception as e:
+        print(f"Error deleting credit scores: {e}")
+        return False
+
+# CREDIT SCORE ADMIN FUNCTIONS
+
+def load_pending_credit_scores():
+    """
+    Load all pending renter credit scores for admin review.
+
+    Returns:
+        list of dict: List of pending credit scores with details.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Fetch all pending credit scores
+        cursor.execute(
+            """
+            SELECT user_id, status, authorized, uploaded_file, request_timestamp
+            FROM renter_credit_scores
+            WHERE status = 'Pending'
+            """
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        # Map results to a list of dictionaries
+        pending_scores = [
+            {
+                "user_id": row[0],
+                "status": row[1],
+                "authorized": bool(row[2]),
+                "uploaded_file": row[3],  # This is binary data
+                "request_timestamp": row[4],
+            } for row in rows
+        ]
+
+        print("All pending credit scores loaded successfully.")
+        return pending_scores
+
+    except Exception as e:
+        print(f"Error loading pending credit scores: {e}")
+        return []
+
+def download_credit_score_file(user_id):
+    """
+    Retrieve the uploaded credit score file for a specific user.
+
+    Args:
+        user_id (int): The ID of the user whose file is to be downloaded.
+
+    Returns:
+        tuple: (file_data, success) where file_data is binary content or None, and success is a boolean.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Fetch the uploaded file for the specified user
+        cursor.execute(
+            """
+            SELECT uploaded_file
+            FROM renter_credit_scores
+            WHERE user_id = ?
+            """,
+            (user_id,)
+        )
+        row = cursor.fetchone()
+        conn.close()
+
+        if row and row[0]:
+            print(f"File for user_id {user_id} retrieved successfully.")
+            return row[0], True  # Return the binary file data
+        else:
+            print(f"No uploaded file found for user_id {user_id}.")
+            return None, False
+
+    except Exception as e:
+        print(f"Error downloading file for user_id {user_id}: {e}")
+        return None, False
+
+def update_credit_score_status(user_id, new_status):
+    """
+    Update the status of a renter's credit score.
+
+    Args:
+        user_id (int): The ID of the user whose credit score status is to be updated.
+        new_status (str): The new status to set ('Verified' or 'Rejected').
+
+    Returns:
+        bool: True if the update was successful, False otherwise.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Update the status for the specified user
+        cursor.execute(
+            """
+            UPDATE renter_credit_scores
+            SET status = ?, verification_timestamp = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+            """,
+            (new_status, user_id)
+        )
+
+        if cursor.rowcount > 0:
+            conn.commit()
+            conn.close()
+            print(f"Credit score for user_id {user_id} updated to '{new_status}'.")
+            return True
+        else:
+            conn.close()
+            print(f"No credit score found for user_id {user_id}.")
+            return False
+
+    except Exception as e:
+        print(f"Error updating credit score status for user_id {user_id}: {e}")
+        return False
+
 
 # Save agent profile to the database
 def save_agent_profile_to_db(user_id, profile_data):

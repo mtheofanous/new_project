@@ -113,6 +113,8 @@ def create_tables():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         property_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
+        status TEXT DEFAULT 'Pending',
+        status_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         interest_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(property_id, user_id),
         FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
@@ -135,9 +137,9 @@ def create_tables():
     CREATE TRIGGER IF NOT EXISTS decrement_interest_count
     AFTER DELETE ON property_interest
     BEGIN
-        UPDATE property_interest
+        UPDATE properties
         SET interest_count = interest_count - 1
-        WHERE property_id = OLD.property_id;
+        WHERE id = OLD.property_id;
     END;
     """)
 
@@ -176,21 +178,19 @@ def create_tables():
     # Renter Credit Score Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS renter_credit_scores (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL, -- The user marking the favorite
-        favorite_user_id INTEGER, -- The user being favorited (agent, renter, or landlord)
-        favorite_renter_id INTEGER, -- Optional: specific renter profiles
-        favorite_landlord_id INTEGER, -- Optional: specific landlord profiles
-        favorite_agent_id INTEGER, -- Optional: specific agent profiles
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (favorite_user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (favorite_renter_id) REFERENCES renter_profiles(id) ON DELETE CASCADE,
-        FOREIGN KEY (favorite_landlord_id) REFERENCES landlord_profiles(id) ON DELETE CASCADE,
-        FOREIGN KEY (favorite_agent_id) REFERENCES agent_profiles(id) ON DELETE CASCADE,
-        UNIQUE (user_id, favorite_user_id, favorite_renter_id, favorite_landlord_id, favorite_agent_id)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,        -- Unique identifier for each credit score record
+        user_id INTEGER NOT NULL,                    -- The ID of the renter
+        status TEXT DEFAULT 'Not Verified',               -- Status of the credit score: 'Pending', 'Verified', 'Not Verified'
+        score INTEGER,                               -- Numeric credit score, if available
+        authorized BOOLEAN DEFAULT 0,                -- Whether the renter authorized a credit check
+        uploaded_file BLOB,                          -- Uploaded credit score file (if applicable), stored as binary
+        request_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- When the credit score was requested
+        verification_timestamp TIMESTAMP,            -- When the credit score was verified
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, -- Link to users table
+        UNIQUE (user_id)                             -- Ensure one credit score entry per renter
     )
     """)
+    
     
     # Add UNIQUE index to user_id if it doesn't exist
     cursor.execute("""
@@ -284,12 +284,11 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS favorites (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,  -- The user marking the favorite
-        profile_type TEXT CHECK (profile_type IN ('renter', 'landlord', 'agent')) NOT NULL,  -- Type of the profile being favorited
-        profile_id INTEGER NOT NULL,  -- ID of the renter, landlord, or agent profile
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (profile_id) REFERENCES renter_profiles(id) ON DELETE CASCADE,  -- Dynamically links to appropriate profile tables
-        UNIQUE (user_id, profile_type, profile_id)  -- Prevents duplicate favorites
+        favorite_type TEXT CHECK (favorite_type IN ('renter', 'landlord', 'agent', 'property')) NOT NULL,  -- Type of the favorite
+        favorite_id INTEGER NOT NULL,  -- ID of the renter, landlord, agent, or property
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Timestamp when the favorite was added
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,  -- User who is adding the favorite
+        UNIQUE (user_id, favorite_type, favorite_id)  -- Prevents duplicate favorites for the same user
     )
     """)
 

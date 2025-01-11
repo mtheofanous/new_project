@@ -65,17 +65,20 @@ def dashboard():
                 st.session_state["logout_confirmation"] = False
                 
     # Create columns to align the log out button on the right
-    col1, col2 = st.columns([6, 1])  # Adjust column proportions as needed
+    col1, col2, col3 = st.columns([6,1,2])  # Adjust column proportions as needed
     with col1:
         if st.button("Settings", key="settings_button"):
             st.session_state["current_page"] = "profile_settings"
-            
     with col2:
+        if st.button("❤️", key="favorites_button"):
+            st.session_state["current_page"] = "display_favorites"
+            
+    with col3:
         if st.button("Log Out", key="log_out_button"):
             st.session_state["logout_confirmation"] = True
                     
-    col3, col4 = st.columns([2, 1])
-    with col4:
+    col4, col5 = st.columns([2, 1])
+    with col5:
         if st.session_state["logout_confirmation"]:
             st.warning("Are you sure that you want to log out?")
             col_yes, col_no = st.columns([1,2])

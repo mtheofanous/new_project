@@ -20,6 +20,7 @@ from renter.credit_score.credit_score import credit_score
 from renter.rental_preferences import rental_preferences
 from renter.search_properties import search_properties
 from renter.renter_preview_property import renter_preview_property
+from favorites import display_favorites
 from settings import profile_settings
 from renter.search_properties import search_properties
 
@@ -70,7 +71,8 @@ def main():
         search_renters()
     elif st.session_state["current_page"] == "search_properties":
         search_properties()
-    
+    elif st.session_state["current_page"] == "display_favorites":
+        display_favorites()
 
     elif st.session_state["current_page"] == "rental_preferences":
         rental_preferences()

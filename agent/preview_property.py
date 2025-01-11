@@ -57,7 +57,7 @@ def preview_property(property):
     st.write("**Associated Users:**")
     if users:
         for user in users:
-            role_icon = "👤 Agent" if user['role'] == "agent" else "🏠 Landlord"
+            role_icon = "🧑‍💼 Agent" if user['role'] == "agent" else "👨‍💼 Landlord"
             st.write(f"- {user['username']} - {role_icon}")
     else:
         st.write("No associated users.")

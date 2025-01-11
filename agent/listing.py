@@ -15,7 +15,6 @@ def listing():
     if "expander_open" not in st.session_state:
         st.session_state["expander_open"] = True
 
-    
     st.header("Property Generator")
     with st.expander("**Property Generator**", expanded=st.session_state["expander_open"]):
         st.write("Enter a property URL to generate its profile.")
@@ -228,8 +227,8 @@ def listing():
         st.error("User not logged in.")
         return
 
-    if "role" not in st.session_state:
-        st.session_state["role"] = "agent"
+    # if "role" not in st.session_state:
+    #     st.session_state["role"] = "agent"
 
     role = st.session_state.get("role", "").lower()
     if not role:
