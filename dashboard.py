@@ -10,6 +10,8 @@ from agent.agent_summary_profile import agent_summary_profile
 from agent.search_renters import search_renters
 from renter.recommendations.recommendation import recommendation
 from renter.credit_score.credit_score import credit_score
+from renter.search_properties import search_properties
+from renter.renter_preview_property import renter_preview_property
 from settings import profile_settings
 from roles import get_user_roles
 
@@ -19,43 +21,19 @@ def renter_dashboard():
     st.write("Welcome to your dashboard! Here you can manage your profile, send recommendations, and explore properties.")
     renter_summary_profile()
     
-    col1, col2, col3, col4 = st.columns([1, 1, 1])
-    
-    with col1:
-        if st.button("Rental Preferences", key="rental_preferences_button"):
+    if st.sidebar.button("Rental Preferences", key="rental_preferences_button"):
                     st.session_state["current_page"] = "rental_preferences"
-    with col2:
-        if st.button("Manage Recommendations", key="recommendation_button"):
+
+    if st.sidebar.button("Manage Recommendations", key="recommendation_button"):
                     st.session_state["current_page"] = "recommendation"
                     
-    with col3:
-        if st.button("Manage Credit Score", key="credit_score_button"):
+    if st.sidebar.button("Manage Credit Score", key="credit_score_button"):
                     st.session_state["current_page"] = "credit_score"
+                    
+    if st.sidebar.button("Search Properties", key="search_properties_button"):
+                    st.session_state["current_page"] = "search_properties"
     
                     
-    # Available Properties
-    with st.expander("Available Properties"):
-        st.write("Based on your preferences, here are some properties you might like:")
-        # Sample properties (In a real scenario, fetch from a database)
-        properties = [
-            {"name": "Downtown Apartment", "price": 1200, "location": "Los Angeles, Downtown", "rooms": 2},
-            {"name": "Cozy Studio", "price": 900, "location": "Los Angeles, Westwood", "rooms": 1},
-            {"name": "Spacious Family Home", "price": 2500, "location": "Los Angeles, Beverly Hills", "rooms": 4}
-        ]
-
-        for property in properties:
-            st.write(f"**Name:** {property['name']}")
-            st.write(f"**Price:** ${property['price']} per month")
-            st.write(f"**Location:** {property['location']}")
-            st.write(f"**Rooms:** {property['rooms']}")
-            if st.button(f"View Details for {property['name']}", key=f"view_{property['name']}"):
-                st.info(f"Details for {property['name']} are not yet implemented.")
-            if st.button(f"Express Interest in {property['name']}", key=f"interest_{property['name']}"):
-                # Simulate sending interest to the landlord's dashboard
-                st.success(f"Your interest in {property['name']} has been sent to the landlord.")
-            st.markdown("---")
-
-# agent_dashboard() elements(summary_profile, full_profile, edit_profile, listing, client_reviews, settings)         
 def agent_dashboard():
     st.title("Agent Dashboard")
     st.write("Welcome to your dashboard! Here you can manage your profile, view listings, and interact with clients.")

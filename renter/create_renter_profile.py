@@ -15,7 +15,7 @@ def create_renter_profile():
     # Renter Profile Inputs
     profile_pic = st.file_uploader("Upload Profile Picture", type=["jpg", "jpeg", "png"], key="create_profile_pic")
     first_name = st.text_input("First Name")
-    surname = st.text_input("Surname")
+    last_name = st.text_input("Last Name")
     tagline = st.text_input("Tagline")
     age = st.number_input("Age", min_value=18, max_value=100, step=1)
     phone = st.text_input("Phone Number")
@@ -47,8 +47,8 @@ def create_renter_profile():
     # Save Profile Button
     if st.button("Save Profile"):
         # Mandatory field validation
-        if not first_name or not surname:
-            st.error("First Name and Surname are required fields.")
+        if not first_name or not last_name:
+            st.error("First Name and Last Name are required fields.")
             return
         
         # Profile picture size validation
@@ -60,7 +60,7 @@ def create_renter_profile():
         profile_data = {
             "profile_pic": profile_pic.read() if profile_pic else None,  # Save as binary data
             "first_name": first_name,
-            "surname": surname,
+            "last_name": last_name,
             "tagline": tagline,
             "age": age,
             "phone": phone,

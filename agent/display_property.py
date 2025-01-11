@@ -57,6 +57,5 @@ def display_property(property):
                     st.session_state[delete_key] = False
                     st.rerun()
 
-
     
                 

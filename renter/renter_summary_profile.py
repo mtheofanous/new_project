@@ -16,7 +16,7 @@ def renter_summary_profile():
         renter_profile = st.session_state.get("renter_profile")
 
         profile_pic = renter_profile["profile_pic"]
-        name = f"{renter_profile['first_name']} {renter_profile['surname']}"
+        name = f"{renter_profile['first_name']} {renter_profile['last_name']}"
         tagline = renter_profile["tagline"]
         # if status is not set then credit_score_verified is Not Verified
         if "status" not in st.session_state:

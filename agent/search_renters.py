@@ -162,68 +162,9 @@ def search_renters():
                         unsafe_allow_html=True
                     )
                 st.write("---")
-        # if renters:
-        #     st.write(f"Found {len(renters)} renter(s):")
-        #     for renter in renters:
-        #         st.write(f"Name: {renter['first_name']} {renter['surname']}")
-        #         st.write(f"Age: {renter['age']}")
-        #         st.write(f"Nationality: {renter['nationality']}")
-        #         st.write(f"Credit Score Status: {renter['credit_score_status']}")
-        #         st.write("---")
-                
-        #         with st.expander(f"View Profile: {renter['first_name']} {renter['surname']}"):
-        #             st.markdown(
-        #                 f"""
-        #                 <div style="background-color: #f9f9f9; padding: 15px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-        #                     <div style="text-align: center;">
-        #                         <img src="{renter['profile_pic']}" alt="Profile Picture" style="border-radius: 50%; width: 150px; height: 150px; object-fit: cover; margin-bottom: 15px;">
-        #                     </div>
-        #                     <h3 style="text-align: center; margin-bottom: 20px;">{renter['first_name']} {renter['surname']}</h3>
-        #                     <p><strong>Age:</strong> {renter['age']} years</p>
-        #                     <p><strong>Nationality:</strong> {renter['nationality']}</p>
-        #                     <p><strong>Contract Type:</strong> {renter['contract_type']}</p>
-        #                     <p><strong>Income:</strong> €{renter['income']}</p>
-        #                     <p><strong>Work Mode:</strong> {renter['work_mode']}</p>
-        #                     <p><strong>Preferred City:</strong> {renter['preferred_city']}</p>
-        #                     <p><strong>Preferred Area:</strong> {renter['preferred_area']}</p>
-        #                     <p><strong>Budget Range:</strong> €{renter['budget_min']} - €{renter['budget_max']}</p>
-        #                     <p><strong>Property Type:</strong> {renter['property_type']}</p>
-        #                     <p><strong>Rooms Needed:</strong> {renter['rooms_needed']}</p>
-        #                     <p><strong>Number of People:</strong> {renter['number_of_people']}</p>
-        #                     <p><strong>Move-in Date:</strong> {renter['move_in_date']}</p>
-        #                     <p><strong>Pets Allowed:</strong> {'Yes' if renter['pets'] else 'No'}</p>
-        #                     <p><strong>Lease Duration:</strong> {renter['lease_duration']}</p>
-        #                     <p><strong>Credit Score Status:</strong> {renter['credit_score_status']}</p>
-        #                 </div>
-        #                 """,
-        #                 unsafe_allow_html=True
-        #             )
-
                             
         else:
             st.warning("No renters found with the specified filters.")
 
 if __name__ == "__main__":
     search_renters()
-
-
-
-    #     # Display results
-    #     if renters:
-    #         st.write(f"Found {len(renters)} renter(s):")
-    #         for renter in renters:
-    #             st.write(f"Name: {renter['first_name']} {renter['surname']}")
-    #             st.write(f"Age: {renter['age']}")
-    #             st.write(f"Nationality: {renter['nationality']}")
-    #             # Add button for full profile
-    #             if st.button(f"View Full Profile ({renter['first_name']} {renter['surname']})", key=f"profile_{renter['id']}"):
-    #                 st.session_state["renter_profile"] = dict(renter)  # Save renter's profile
-    #                 st.session_state["current_page"] = "renters_profiles"  # Navigate to full profile page
-    #                 st.rerun()  # Trigger navigation
-    #             st.write("---")
-    #     else:
-    #         st.warning("No renters found with the specified filters.")
-
-            
-# if __name__ == "__main__":
-#     search_renters()

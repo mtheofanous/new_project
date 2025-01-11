@@ -172,13 +172,13 @@ def save_renter_profile_to_db(user_id, profile_data):
 
         cursor.execute("""
         INSERT INTO renter_profiles (
-            profile_pic, user_id, first_name, surname, tagline, age, phone, nationality, occupation, contract_type,
+            profile_pic, user_id, first_name, last_name, tagline, age, phone, nationality, occupation, contract_type,
             income, work_mode, bio, hobbies, social_media
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
             profile_pic=excluded.profile_pic,
             first_name=excluded.first_name,
-            surname=excluded.surname, 
+            last_name=excluded.last_name, 
             tagline=excluded.tagline, 
             age=excluded.age,
             phone=excluded.phone, 
@@ -194,7 +194,7 @@ def save_renter_profile_to_db(user_id, profile_data):
             renter_profile_pic_data,
             user_id,
             profile_data.get("first_name"),
-            profile_data.get("surname"),
+            profile_data.get("last_name"),
             profile_data.get("tagline"),
             profile_data.get("age"),
             profile_data.get("phone"),
@@ -234,7 +234,8 @@ def load_renter_profile_from_db(user_id):
 
     try:
         cursor.execute("""
-        SELECT id, profile_pic, first_name, surname, tagline, age, phone, nationality, occupation, contract_type, income, work_mode, bio, hobbies, social_media
+        SELECT id, profile_pic, first_name, last_name, tagline, age, phone, 
+        nationality, occupation, contract_type, income, work_mode, bio, hobbies, social_media
         FROM renter_profiles WHERE user_id = ?
         """, (user_id,))
         return cursor.fetchone()
@@ -242,8 +243,132 @@ def load_renter_profile_from_db(user_id):
     finally:
         conn.close()
         
+        
+def load_renter_profile_with_credit_status(user_id):
+    """
+    Fetch the renter profile, username, and credit score status for a given user ID.
+    
+    Args:
+        user_id (int): The ID of the user.
+    
+    Returns:
+        dict: A dictionary containing renter profile, username, and credit score status, or None if not found.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-import sqlite3
+    try:
+        # Query to fetch the renter profile and associated username and credit score status
+        query = """
+        SELECT 
+            u.username, 
+            rp.*, 
+            rcs.status AS credit_score_status
+        FROM users u
+        LEFT JOIN renter_profiles rp ON u.id = rp.user_id
+        LEFT JOIN renter_credit_scores rcs ON u.id = rcs.user_id
+        WHERE u.id = ?
+        """
+        cursor.execute(query, (user_id,))
+        result = cursor.fetchone()
+        
+        if result:
+            # Convert the row to a dictionary
+            return {
+                "username": result["username"],
+                "renter_profile": {
+                    "profile_pic": result["profile_pic"],
+                    "first_name": result["first_name"],
+                    "surname": result["surname"],
+                    "tagline": result["tagline"],
+                    "age": result["age"],
+                    "phone": result["phone"],
+                    "nationality": result["nationality"],
+                    "occupation": result["occupation"],
+                    "contract_type": result["contract_type"],
+                    "income": result["income"],
+                    "work_mode": result["work_mode"],
+                    "bio": result["bio"],
+                    "hobbies": result["hobbies"],
+                    "social_media": result["social_media"]
+                },
+                "credit_score_status": result["credit_score_status"]
+            }
+        # Return None if no results found for the user ID else return the dictionary
+        return None
+    
+    finally:
+        conn.close()
+        
+# save property interest to the database
+        
+def save_property_interest(property_id, user_id):
+    """
+    Save a user's interest in a property.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Insert the user's interest in the property
+        cursor.execute("""
+        INSERT INTO property_interest (property_id, user_id)
+        VALUES (?, ?)
+        """, (property_id, user_id))
+
+        conn.commit()
+        return True
+
+    except sqlite3.IntegrityError:
+        # The user already expressed interest in this property
+        return False
+
+    finally:
+        conn.close()
+        
+
+# Delete property interest from the database
+        
+def delete_property_interest(property_id, user_id):
+    """
+    Remove a user's interest in a property.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        DELETE FROM property_interest
+        WHERE property_id = ? AND user_id = ?
+        """, (property_id, user_id))
+
+        if cursor.rowcount > 0:  # Check if any rows were deleted
+            conn.commit()
+            return True  # Successfully removed interest
+        else:
+            return False  # No interest to delete
+
+    finally:
+        conn.close()
+
+
+def has_expressed_interest(property_id, user_id):
+    """
+    Check if a user has already expressed interest in a property.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+        SELECT 1 FROM property_interest
+        WHERE property_id = ? AND user_id = ?
+        """, (property_id, user_id))
+        return cursor.fetchone() is not None  # True if interest exists
+
+    finally:
+        conn.close()
+
 
 def save_rental_preferences_to_db(profile_id, preferences_data):
     """
@@ -262,7 +387,11 @@ def save_rental_preferences_to_db(profile_id, preferences_data):
         budget_min = preferences_data.get("budget_min", 0)
         budget_max = preferences_data.get("budget_max", 0)
         property_type = preferences_data.get("property_type", "")
-        rooms_needed = preferences_data.get("rooms_needed", 0)
+        property_size_min = preferences_data.get("property_size_min", 0.0)
+        property_size_max = preferences_data.get("property_size_min", 0.0)
+        bedrooms = preferences_data.get("bedrooms", 0)
+        bathrooms = preferences_data.get("bathrooms", 0)
+        floor = preferences_data.get("floor", 0)
         number_of_people = preferences_data.get("number_of_people", 1)
         move_in_date = preferences_data.get("move_in_date", "")
         pets = preferences_data.get("pets", False)
@@ -272,16 +401,21 @@ def save_rental_preferences_to_db(profile_id, preferences_data):
         cursor.execute("""
             INSERT INTO rental_preferences (
                 profile_id, preferred_city, preferred_area, budget_min, budget_max, 
-                property_type, rooms_needed, number_of_people, move_in_date, 
+                property_type, property_size_min, property_size_max, bedrooms, bathrooms, 
+                floor, number_of_people, move_in_date, 
                 pets, pet_type, lease_duration
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(profile_id) DO UPDATE SET
                 preferred_city = excluded.preferred_city, 
                 preferred_area = excluded.preferred_area,
                 budget_min = excluded.budget_min, 
                 budget_max = excluded.budget_max,
-                property_type = excluded.property_type, 
-                rooms_needed = excluded.rooms_needed,
+                property_type = excluded.property_type,
+                property_size_min = excluded.property_size_min,
+                property_size_max = excluded.property_size_max,
+                bedrooms = excluded.bedrooms,
+                bathrooms = excluded.bathrooms,
+                floor = excluded.floor,
                 number_of_people = excluded.number_of_people, 
                 move_in_date = excluded.move_in_date,
                 pets = excluded.pets, 
@@ -294,7 +428,11 @@ def save_rental_preferences_to_db(profile_id, preferences_data):
             budget_min,
             budget_max,
             property_type,
-            rooms_needed,
+            property_size_min,
+            property_size_max,
+            bedrooms,
+            bathrooms,
+            floor,
             number_of_people,
             move_in_date,
             pets,
@@ -326,7 +464,9 @@ def load_rental_preferences_from_db(profile_id):
 
     try:
         cursor.execute("""
-        SELECT preferred_city, preferred_area, budget_min, budget_max, property_type, rooms_needed, number_of_people, move_in_date, pets, pet_type, lease_duration
+        SELECT preferred_city, preferred_area, budget_min, budget_max,property_type, 
+        property_size_min, property_size_max, bedrooms, bathrooms, floor, number_of_people, 
+        move_in_date, pets, pet_type, lease_duration
         FROM rental_preferences WHERE profile_id = ?
         """, (profile_id,))
         preferences = cursor.fetchone()
@@ -338,7 +478,11 @@ def load_rental_preferences_from_db(profile_id):
                 "budget_min": preferences["budget_min"],
                 "budget_max": preferences["budget_max"],
                 "property_type": preferences["property_type"],
-                "rooms_needed": preferences["rooms_needed"],
+                "property_size_min": preferences["property_size_min"],
+                "property_size_max": preferences["property_size_max"],
+                "bedrooms": preferences["bedrooms"],
+                "bathrooms": preferences["bathrooms"],
+                "floor": preferences["floor"],
                 "number_of_people": preferences["number_of_people"],
                 "move_in_date": preferences["move_in_date"],
                 "pets": preferences["pets"],
@@ -364,6 +508,8 @@ def save_credit_score(user_id, status, authorized, uploaded_file):
     conn.commit()
     conn.close()
     print(f"Credit score for user_id {user_id} saved with status '{status}', authorized={authorized}, uploaded_file={uploaded_file}.")
+    
+    
 
 def load_credit_scores(user_id=None):
     """
@@ -432,13 +578,14 @@ def save_agent_profile_to_db(user_id, profile_data):
         
         cursor.execute("""
         INSERT INTO agent_profiles (
-            agent_profile_pic, user_id, name, phone, agency_name, agency_address,
+            agent_profile_pic, user_id, first_name, last_name,phone, agency_name, agency_address,
             agency_website, social_media, working_days, working_hours, preferred_communication, 
             services, languages, mission_statement
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
-            agent_profile_pic=excluded.agent_profile_pic, 
-            name=excluded.name, 
+            agent_profile_pic=excluded.agent_profile_pic,
+            first_name=excluded.first_name,
+            last_name=excluded.last_name, 
             phone=excluded.phone, 
             agency_name=excluded.agency_name,
             agency_address=excluded.agency_address,
@@ -453,7 +600,8 @@ def save_agent_profile_to_db(user_id, profile_data):
         """, (
             agent_profile_pic_data,
             user_id,
-            profile_data.get("name"),
+            profile_data.get("first_name"),
+            profile_data.get("last_name"),
             profile_data.get("phone"),
             profile_data.get("agency_name"),
             profile_data.get("agency_address"),
@@ -493,7 +641,7 @@ def load_agent_profile_from_db(user_id):
 
     try:
         cursor.execute("""
-        SELECT id, agent_profile_pic, name, phone, agency_name, agency_address, agency_website,
+        SELECT id, agent_profile_pic, first_name, last_name, phone, agency_name, agency_address, agency_website,
         social_media, working_days, working_hours, preferred_communication, 
         services, languages, mission_statement
         FROM agent_profiles WHERE user_id = ?
@@ -520,8 +668,9 @@ def save_property_to_db(property_data, user_id):
             friendly_name, property_type, property_size, property_location, property_price,
             price_per_sqm, bedrooms, bathrooms, floor, year_built, condition,
             renovation_year, energy_class, availability, available_from,
-            heating_method, zone, creation_method, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            heating_method, zone, creation_method, user_id, interest_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        )
         """, (
             property_data.get("friendly_name"),
             property_data.get("property_type"),
@@ -541,6 +690,7 @@ def save_property_to_db(property_data, user_id):
             property_data.get("heating_method"),
             property_data.get("zone"),
             property_data.get("creation_method", "manual"),
+            property_data.get("interest_count", 0),
             user_id
         ))
         conn.commit()
@@ -635,7 +785,7 @@ def load_property_by_id(property_id):
         SELECT id, friendly_name, property_type, property_size, property_location, property_price, 
                price_per_sqm, bedrooms, bathrooms, floor, year_built, condition,
                renovation_year, energy_class, availability, available_from,
-               heating_method, zone, creation_method
+               heating_method, zone, creation_method, interest_count
         FROM properties
         WHERE id = ?
         """, (property_id,))
@@ -665,7 +815,7 @@ def update_property_in_db(property_id, updated_data, user_id):
             property_price = ?, price_per_sqm = ?, bedrooms = ?, bathrooms = ?, 
             floor = ?, year_built = ?, condition = ?, renovation_year = ?, 
             energy_class = ?, availability = ?, available_from = ?, 
-            heating_method = ?, zone = ?, creation_method = ?
+            heating_method = ?, zone = ?, creation_method = ?, interest_count = ?
         WHERE id = ?
         """, (
             updated_data.get("friendly_name"),
@@ -686,6 +836,7 @@ def update_property_in_db(property_id, updated_data, user_id):
             updated_data.get("heating_method"),
             updated_data.get("zone"),
             updated_data.get("creation_method", "manual"),
+            updated_data.get("interest_count"),
             user_id 
         ))
         conn.commit()

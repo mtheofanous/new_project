@@ -5,7 +5,7 @@ from database import *
 from db_setup import get_db_connection
 from agent.display_property import display_property
 import base64
-
+from time import sleep
 
 def listing():
     
@@ -21,82 +21,125 @@ def listing():
         st.write("Enter a property URL to generate its profile.")
         
         choose_method = st.radio("Choose a method to input the property:",("Enter URL", "Manual Input"))
-
+        
         if choose_method == "Enter URL":
+            # Initialize session state variables
+            if "urls" not in st.session_state:
+                st.session_state.urls = [""]
+            if "url_number" not in st.session_state:
+                st.session_state.url_number = 1
 
-            url = st.text_input("Property URL:", placeholder="Enter the property URL here")
+            # Display URL input fields
+            st.title("Enter Property URLs")
+            for i in range(st.session_state.url_number):
+                st.session_state.urls[i] = st.text_input(
+                    f"Property URL {i+1}:",
+                    value=st.session_state.urls[i],
+                    placeholder="Enter the property URL here",
+                    key=f"url_input_{i}",
+                )
+
+            # Buttons to add or remove URL fields
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("➕ Add URL"):
+                    st.session_state.url_number += 1
+                    st.session_state.urls.append("")
+                    sleep(0.2)
+            with col2:
+                if st.button("➖ Remove URL") and st.session_state.url_number > 1:
+                    st.session_state.url_number -= 1
+                    st.session_state.urls.pop()
+                    sleep(0.2)
+
+            # Generate profile button
             if st.button("Generate Profile"):
-                if url: 
+                if st.session_state.urls:
                     with st.spinner("Scraping data..."):
                         try:
-                            property_data = scrape_data_to_dict(url)
-                            
-                            # images
-                            images = property_data.get('images', [])
-                            
-                            characteristics = property_data.get('characteristics', {})
-                            
-                            # floor
-                            floor = characteristics['Floor'] if 'Floor' in characteristics else None
-                            
-                            floor = floor.replace("st", "").replace("nd", "").replace("rd", "").replace("th", "").strip()
-                            floor = int(floor) if floor else None
-                            
-                            st.success("Data scraped successfully!")
-        
-                            
-                            property = {
+                            # Replace this with your scraping function
+                            for url in st.session_state.urls:
+                                try:
+                                    if url.strip():  # Ensure the URL is not empty
+                                        property_data = scrape_data_to_dict(url)
+                                        st.success(f"Scraped data for {url}")
+                                    
+                                        # images
+                                        images = property_data.get('images', [])
+                                        
+                                        characteristics = property_data.get('characteristics', {})
+                                        
+                                        # floor
+                                        floor = characteristics['Floor'] if 'Floor' in characteristics else None
+                                        
+                                        floor = floor.replace("st", "").replace("nd", "").replace("rd", "").replace("th", "").strip()
+                                        try:
+                                            floor = int(floor)
+                                        except:
+                                            floor = floor.split(" ")[0]
+                                            try:
+                                                floor = int(floor)
+                                            except:
+                                                floor = None
+                                        
+                                        st.success("Data scraped successfully!")     
+                                        
+                                        property = {
+                                            
+                                            "friendly_name": property_data.get('friendly_name', 'No Friendly Name'),
+                                            "property_type": property_data.get('property_type', 'No Property Type'), # cannot be None or empty 
+                                            "property_size": property_data.get('property_size', 0.0) if property_data.get('property_size') else 0.0,
+                                            "property_location": property_data.get('property_location', 'No Property Location'),
+                                            "property_price": property_data.get('property_price', 0.0) if property_data.get('property_price') else 0.0,
+                                            "price_per_sqm": property_data.get('price_per_sqm', 0.0) if property_data.get('price_per_sqm') else 0.0,
+                                            "bedrooms": characteristics.get('Bedrooms', 0) if characteristics.get('Bedrooms') else 0,
+                                            "bathrooms": characteristics.get('Bathrooms', 0) if characteristics.get('Bathrooms') else 0,
+                                            "floor": floor,
+                                            "year_built": characteristics.get('Year Built', 1990) if characteristics.get('Year Built') else 1990,
+                                            "condition": characteristics.get('Condition', 'N/A'),
+                                            "renovation_year": characteristics.get('Renovation Year', 2000) if characteristics.get('Renovation Year') else 2000,
+                                            "energy_class": characteristics.get('Energy Class', 'N/A'),
+                                            "availability": characteristics.get('Availability', 'N/A'),
+                                            "available_from": characteristics.get('Available From', 'N/A'),
+                                            "heating_method": characteristics.get('Heating Method', 'N/A'),
+                                            "zone": characteristics.get('Zone', 'N/A'),
+                                            "interest_count": 0,
+                                            "creation_method": "url"
+                                        }
+                                                                    
+                                        user_id = st.session_state.get("user_id")
+                                        property_id = save_property_to_db(property, user_id)
+                                        
+                                        # save images
+                                        save_property_image_to_db(property_id, user_id, images)
+                                        
+                                        if 'role' not in st.session_state:
+                                            st.session_state["role"] = "agent"
+                                        
+                                        role = st.session_state.get("role")
+                                        if role:
+                                            role = role.lower()
+                                        else:
+                                            raise ValueError("Role not set. Please set the role to 'landlord' or 'agent'.")
+                                        if role not in ['landlord', 'agent']:
+                                            raise ValueError("Invalid role. Please ensure the role is set to 'landlord' or 'agent'.")
+                                        sleep(0.2)
+                                        save_property_ownership(property_id, user_id, role)
+                                        st.success("Property saved successfully!")
+                                        sleep(0.2)
+                                                                
+                                    else:
+                                        st.warning("Please enter a URL.")
+                                except Exception as e:
+                                    st.error(f"An error occurred: {e}")
                                 
-                                "friendly_name": property_data.get('friendly_name', 'No Friendly Name'),
-                                "property_type": property_data.get('property_type', 'No Property Type'), # cannot be None or empty 
-                                "property_size": property_data.get('property_size', 0.0) if property_data.get('property_size') else 0.0,
-                                "property_location": property_data.get('property_location', 'No Property Location'),
-                                "property_price": property_data.get('property_price', 0.0) if property_data.get('property_price') else 0.0,
-                                "price_per_sqm": property_data.get('price_per_sqm', 0.0) if property_data.get('price_per_sqm') else 0.0,
-                                "bedrooms": characteristics.get('Bedrooms', 0) if characteristics.get('Bedrooms') else 0,
-                                "bathrooms": characteristics.get('Bathrooms', 0) if characteristics.get('Bathrooms') else 0,
-                                "floor": floor,
-                                "year_built": characteristics.get('Year Built', 1990) if characteristics.get('Year Built') else 1990,
-                                "condition": characteristics.get('Condition', 'N/A'),
-                                "renovation_year": characteristics.get('Renovation Year', 2000) if characteristics.get('Renovation Year') else 2000,
-                                "energy_class": characteristics.get('Energy Class', 'N/A'),
-                                "availability": characteristics.get('Availability', 'N/A'),
-                                "available_from": characteristics.get('Available From', 'N/A'),
-                                "heating_method": characteristics.get('Heating Method', 'N/A'),
-                                "zone": characteristics.get('Zone', 'N/A'),
-                                "creation_method": "url"
-                            }
-                                                        
-                            user_id = st.session_state.get("user_id")
-                            property_id = save_property_to_db(property, user_id)
-                            
-                            # save images
-                            save_property_image_to_db(property_id, user_id, images)
-                            
-                            if 'role' not in st.session_state:
-                                st.session_state["role"] = "agent"
-                            
-                            role = st.session_state.get("role")
-                            if role:
-                                role = role.lower()
-                            else:
-                                raise ValueError("Role not set. Please set the role to 'landlord' or 'agent'.")
-                            if role not in ['landlord', 'agent']:
-                                raise ValueError("Invalid role. Please ensure the role is set to 'landlord' or 'agent'.")
-
-                            save_property_ownership(property_id, user_id, role)
-                            st.success("Property saved successfully!")
-                                                     
-                            # close the expander
-                            st.session_state["expander_open"] = False
-                            
-                            st.rerun()
-                    
-                                                                                   
-                        
                         except Exception as e:
-                            st.error(f"An error occurred: {e}")
-                            
+                                st.error(f"An error occurred: {e}")
+                                
+                                                          # close the expander
+                    st.session_state["expander_open"] = False                            
+                    st.rerun()
+                                
                 else:
                     st.warning("Please enter a URL.")
                     
@@ -140,7 +183,8 @@ def listing():
                     "available_from": available_from,
                     "heating_method": heating_method,
                     "zone": zone,
-                    "creation_method": "manual"
+                    "creation_method": "manual",
+                    "interest_count": 0
                 }
                 
                 

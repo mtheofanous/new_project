@@ -11,7 +11,8 @@ def create_agent_profile():
     # Collect agent's basic profile information
     with st.expander("Basic Information"):
         agent_profile_pic = st.file_uploader("Upload Profile Picture", type=["jpg", "jpeg", "png"], key="create_agent_profile_pic")
-        name = st.text_input("Full Name:")
+        first_name = st.text_input("First Name:")
+        last_name = st.text_input("Last Name:")
         agency_name = st.text_input("Agency Name:")
         phone = st.text_input("Phone Number:")
         
@@ -40,7 +41,7 @@ def create_agent_profile():
     if st.button("Save Profile"):
         
         # Mandatory field validation
-        if not name or not agency_name or not phone:
+        if not first_name or not last_name or not agency_name or not phone:
             st.error("Full Name, Agency Name, and Phone Number are required fields.")
             return
         
@@ -51,7 +52,8 @@ def create_agent_profile():
         
         # Build the profile dictionary
         agent_profile = {
-            "name": name,
+            "first_name": first_name,
+            "last_name": last_name,
             "phone": phone,
             "agent_profile_pic": agent_profile_pic.read() if agent_profile_pic else None,
             "agency_name": agency_name,

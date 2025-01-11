@@ -3,7 +3,7 @@ from database import get_users_for_similar_properties
 
 def back_button():
     if st.button("Back", key="back_button"):
-        st.session_state["current_page"] = st.session_state.get("previous_page", "listing")
+        st.session_state["current_page"] = st.session_state.get("previous_page", "search_properties")
         st.rerun()
 
 def display_images(property):
@@ -21,7 +21,7 @@ def display_images(property):
                 elif img["blob"]:
                     st.image(img["blob"], width=300)
                         
-def preview_property(property):
+def renter_preview_property(property):
     
     back_button()
     
@@ -67,9 +67,4 @@ def preview_property(property):
         display_images(property)
     
 if __name__ == "__main__":
-    preview_property(property)
-    
-
-
-
-    
+    renter_preview_property(property)

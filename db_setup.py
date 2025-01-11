@@ -53,7 +53,7 @@ def create_tables():
         user_id INTEGER NOT NULL UNIQUE,
         profile_pic BLOB,
         first_name TEXT DEFAULT NULL,
-        surname TEXT DEFAULT NULL,
+        last_name TEXT DEFAULT NULL,
         tagline TEXT DEFAULT NULL,
         age INTEGER CHECK (age >= 18) DEFAULT 18,
         phone TEXT CHECK (phone GLOB '+[0-9]*' OR (phone GLOB '[0-9]*' AND length(phone) = 10)), 
@@ -82,7 +82,8 @@ def create_tables():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL UNIQUE,
         agent_profile_pic BLOB DEFAULT NULL,
-        name TEXT DEFAULT NULL,
+        first_name TEXT DEFAULT NULL,
+        last_name TEXT DEFAULT NULL,
         phone TEXT CHECK (phone GLOB '+[0-9]*' OR (phone GLOB '[0-9]*' AND length(phone) = 10)),
         agency_name TEXT DEFAULT NULL,
         agency_address TEXT DEFAULT NULL,
@@ -104,7 +105,42 @@ def create_tables():
     cursor.execute("""
     CREATE UNIQUE INDEX IF NOT EXISTS unique_user_id ON agent_profiles (user_id);
     """)
-        
+    
+    
+# property interest table       
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS property_interest (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        property_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        interest_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(property_id, user_id),
+        FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    """)
+
+    # Add a trigger to keep track of the number of interested users per property
+    cursor.execute("""
+    CREATE TRIGGER IF NOT EXISTS update_interest_count
+    AFTER INSERT ON property_interest
+    BEGIN
+        UPDATE properties
+        SET interest_count = COALESCE(interest_count, 0) + 1
+        WHERE id = NEW.property_id;
+    END;
+    """)
+    
+    cursor.execute("""
+    CREATE TRIGGER IF NOT EXISTS decrement_interest_count
+    AFTER DELETE ON property_interest
+    BEGIN
+        UPDATE property_interest
+        SET interest_count = interest_count - 1
+        WHERE property_id = OLD.property_id;
+    END;
+    """)
+
     
     # Rental Preferences Table
     cursor.execute("""
@@ -116,7 +152,11 @@ def create_tables():
         budget_min REAL,
         budget_max REAL,
         property_type TEXT,
-        rooms_needed INTEGER,
+        property_size_min REAL,
+        property_size_max REAL,
+        bedrooms INTEGER,
+        bathrooms INTEGER,
+        floor INTEGER,
         number_of_people INTEGER,
         move_in_date DATE,
         pets BOOLEAN,
@@ -178,6 +218,7 @@ def create_tables():
         availability TEXT,
         available_from TEXT,
         heating_method TEXT,
+        interest_count INTEGER DEFAULT 0,
         zone TEXT,
         creation_method TEXT CHECK (creation_method IN ('manual', 'url')) NOT NULL DEFAULT 'manual',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -185,6 +226,29 @@ def create_tables():
         UNIQUE(property_location, property_size, property_type, floor, bedrooms, user_id) -- Composite unique constraint
     )
     """)
+    
+    # Increment Interest Count Trigger
+    cursor.execute("""
+    CREATE TRIGGER IF NOT EXISTS increment_interest_count
+    AFTER INSERT ON property_interest
+    BEGIN
+        UPDATE properties
+        SET interest_count = COALESCE(interest_count, 0) + 1
+        WHERE id = NEW.property_id;
+    END;
+    """)
+
+    # Decrement Interest Count Trigger
+    cursor.execute("""
+    CREATE TRIGGER IF NOT EXISTS decrement_interest_count
+    AFTER DELETE ON property_interest
+    BEGIN
+        UPDATE properties
+        SET interest_count = interest_count - 1
+        WHERE id = OLD.property_id;
+    END;
+    """)
+
     
     # property images table
     cursor.execute("""

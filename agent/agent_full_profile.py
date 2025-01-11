@@ -17,7 +17,8 @@ def agent_full_profile():
     with col1:
         if agent_profile["agent_profile_pic"]:
             st.image(agent_profile["agent_profile_pic"], width=200)
-        st.markdown(f"##### **Name:** {agent_profile['name']}")
+        st.markdown(f"##### **First Name:** {agent_profile['first_name']}")
+        st.markdown(f"##### **Last Name:** {agent_profile['last_name']}")
         st.markdown(f"##### **Phone:** {agent_profile['phone']}")
         st.markdown(f"##### **Agency Name:** {agent_profile['agency_name']}")
         st.markdown(f"##### **Agency Address:** {agent_profile['agency_address']}")

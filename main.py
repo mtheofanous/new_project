@@ -18,7 +18,10 @@ from dashboard import dashboard
 from renter.recommendations.recommendation import recommendation
 from renter.credit_score.credit_score import credit_score
 from renter.rental_preferences import rental_preferences
+from renter.search_properties import search_properties
+from renter.renter_preview_property import renter_preview_property
 from settings import profile_settings
+from renter.search_properties import search_properties
 
 
 
@@ -65,7 +68,10 @@ def main():
         agent_summary_profile()
     elif st.session_state["current_page"] == "search_renters":
         search_renters()
-        
+    elif st.session_state["current_page"] == "search_properties":
+        search_properties()
+    
+
     elif st.session_state["current_page"] == "rental_preferences":
         rental_preferences()
     elif st.session_state["current_page"] == "listing":
@@ -76,6 +82,12 @@ def main():
         selected_property = st.session_state.get("selected_property", None)
         if selected_property:
             preview_property(selected_property)
+        else:
+            st.error("No property selected for preview.")
+    elif st.session_state["current_page"] == "renter_preview_property":
+        renter_selected_property = st.session_state.get("renter_selected_property", None)
+        if renter_selected_property:
+            renter_preview_property(renter_selected_property)
         else:
             st.error("No property selected for preview.")
     

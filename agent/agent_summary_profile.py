@@ -27,7 +27,8 @@ def agent_summary_profile():
                 if st.button("✏️", key="edit_profile_button"):
                     st.session_state["current_page"] = "edit_agent_profile"
         with col2:
-            st.write(f"**Name:** {agent_profile['name']}")
+            st.write(f"**First Name:** {agent_profile['first_name']}")
+            st.write(f"**Last Name:** {agent_profile['last_name']}")
             st.write(f"**Agency Name:** {agent_profile['agency_name']}")
             st.write(f"**Mission:** {agent_profile['mission_statement']}")
             st.write(f"**Services Offered:** {agent_profile['services']}")

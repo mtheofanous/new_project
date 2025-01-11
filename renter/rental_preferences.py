@@ -57,16 +57,16 @@ def rental_preferences():
     
     # Initialize session state for min and max budget
     if "rental_preferences" not in st.session_state:
-        rental_preferences_data["budget_min"] = 1000
+        rental_preferences_data["budget_min"] = 100.0
     if "rental_preferences" not in st.session_state:
-        rental_preferences_data["budget_max"] = 3000
+        rental_preferences_data["budget_max"] = 2000.0
     
     budget_min, budget_max = st.slider(
         "Budget Range (€)",
-        500,
-        5000,
+        100.0,
+        3000.0,
         value=(rental_preferences_data["budget_min"], rental_preferences_data["budget_max"]),
-        step=50,
+        step=50.0,
         key="budget_slider"
     )
 
@@ -76,13 +76,46 @@ def rental_preferences():
         index=["Apartment", "House", "Shared Accommodation"].index(rental_preferences_data.get("property_type", "Apartment")),
         key="new_profile_property_type"
     )
-    rooms = st.number_input(
+    
+    # Initialize session state for min and max property size
+    if "rental_preferences" not in st.session_state:
+        rental_preferences_data["property_size_min"] = 10.0
+    if "rental_preferences" not in st.session_state:
+        rental_preferences_data["property_size_max"] = 500.0
+    
+    property_size_min, property_size_max = st.slider(
+        "Property Size (m²)",
+        10.0,
+        500.0,
+        value=(rental_preferences_data.get("property_size_min", 10.0), rental_preferences_data.get("property_size_max", 500.0)),
+        step=5.0,
+        key="property_size_slider"
+    )
+    
+    bedrooms = st.number_input(
         "Number of Rooms Needed",
         min_value=1,
         step=1,
-        value=rental_preferences_data.get("rooms_needed", 1),
+        value=rental_preferences_data.get("bedrooms", 1),
         key="new_profile_rooms"
     )
+    
+    bathrooms = st.number_input(
+        "Number of Bathrooms Needed",
+        min_value=1,
+        step=1,
+        value=rental_preferences_data.get("bathrooms", 1),
+        key="new_profile_bathrooms"
+    )
+    
+    floor = st.number_input(
+        "Floor",
+        min_value=0,
+        step=1,
+        value=rental_preferences_data.get("floor", 0),
+        key="new_profile_floor"
+    )
+    
     num_people = st.number_input(
         "Number of People (including yourself)",
         min_value=1,
@@ -123,7 +156,11 @@ def rental_preferences():
             "budget_min": budget_min,
             "budget_max": budget_max,
             "property_type": property_type,
-            "rooms_needed": rooms,
+            "property_size_min": property_size_min,
+            "property_size_max": property_size_max,
+            "bedrooms": bedrooms,
+            "bathrooms": bathrooms,
+            "floor": floor,
             "num_people": num_people,
             "move_in_date": move_in_date,
             "lease_duration": lease_duration,
@@ -142,6 +179,8 @@ def rental_preferences():
                 save_rental_preferences_to_db(user_id, rental_preferences_data)
                 st.success("Rental preferences saved successfully!")
                 st.session_state["current_page"] = "dashboard"
+                
+                st.session_state["rental_preferences"] = rental_preferences_data
             except Exception as e:
                 st.error("Failed to save rental preferences. Please try again.")
                 st.error(e)
