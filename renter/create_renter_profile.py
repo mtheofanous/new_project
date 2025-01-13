@@ -1,10 +1,7 @@
 import streamlit as st
 import uuid
-from navigation_buttons import home_button, back_button 
-from renter.credit_score.credit_score import credit_score
-from database import save_renter_profile_to_db, save_rental_preferences_to_db
-from renter.rental_preferences import rental_preferences  # Import rental preferences
-import datetime
+from navigation_buttons import home_button
+from queries.renter import save_renter_profile_to_db
 
 
 def create_renter_profile():
@@ -14,8 +11,6 @@ def create_renter_profile():
 
     # Renter Profile Inputs
     profile_pic = st.file_uploader("Upload Profile Picture", type=["jpg", "jpeg", "png"], key="create_profile_pic")
-    first_name = st.text_input("First Name")
-    last_name = st.text_input("Last Name")
     tagline = st.text_input("Tagline")
     age = st.number_input("Age", min_value=18, max_value=100, step=1)
     phone = st.text_input("Phone Number")
@@ -47,8 +42,8 @@ def create_renter_profile():
     # Save Profile Button
     if st.button("Save Profile"):
         # Mandatory field validation
-        if not first_name or not last_name:
-            st.error("First Name and Last Name are required fields.")
+        if not phone or not age:
+            st.error("Phone and Age are required fields.")
             return
         
         # Profile picture size validation
@@ -59,8 +54,6 @@ def create_renter_profile():
         # Save renter profile to database
         profile_data = {
             "profile_pic": profile_pic.read() if profile_pic else None,  # Save as binary data
-            "first_name": first_name,
-            "last_name": last_name,
             "tagline": tagline,
             "age": age,
             "phone": phone,
@@ -87,7 +80,6 @@ def create_renter_profile():
                     st.error("Failed to save profile. Profile ID is invalid.")
                     return
                 
-
                 st.success("Your profile has been created successfully!")
                 st.session_state["current_page"] = "dashboard"
                 

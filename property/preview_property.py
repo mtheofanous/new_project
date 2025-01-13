@@ -1,5 +1,5 @@
 import streamlit as st
-from database import get_users_for_similar_properties
+from queries.property import get_users_for_similar_properties
 
 def back_button():
     if st.button("Back", key="back_button"):

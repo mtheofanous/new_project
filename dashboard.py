@@ -1,55 +1,71 @@
 import streamlit as st
-import uuid
-from navigation_buttons import home_button, back_button, log_out_button
-import streamlit.components.v1 as components
-from PIL import Image
 from renter.renter_summary_profile import renter_summary_profile
-from renter.renter_full_profile import renter_full_profile
 from renter.edit_renter_profile import edit_renter_profile
 from agent.agent_summary_profile import agent_summary_profile
-from agent.search_renters import search_renters
-from renter.recommendations.recommendation import recommendation
-from renter.credit_score.credit_score import credit_score
-from renter.search_properties import search_properties
-from renter.renter_preview_property import renter_preview_property
-from settings import profile_settings
+from landlord.landlord_summary_profile import landlord_summary_profile
 from roles import get_user_roles
 
 def renter_dashboard():
     
     st.title("Renter Dashboard")
+    
     st.write("Welcome to your dashboard! Here you can manage your profile, send recommendations, and explore properties.")
     renter_summary_profile()
     
     if st.sidebar.button("Rental Preferences", key="rental_preferences_button"):
-                    st.session_state["current_page"] = "rental_preferences"
+        st.session_state["current_page"] = "rental_preferences"
 
     if st.sidebar.button("Manage Recommendations", key="recommendation_button"):
-                    st.session_state["current_page"] = "recommendation"
+        st.session_state["current_page"] = "recommendation"
                     
     if st.sidebar.button("Manage Credit Score", key="credit_score_button"):
-                    st.session_state["current_page"] = "credit_score"
+        st.session_state["current_page"] = "credit_score"
                     
     if st.sidebar.button("Search Properties", key="search_properties_button"):
-                    st.session_state["current_page"] = "search_properties"
+        st.session_state["current_page"] = "search_properties"
+        
+    if st.sidebar.button("Edit Profile", key="edit_profile_button"):
+        st.session_state["current_page"] = 'edit_renter_profile'
+  
     
-                    
+                
 def agent_dashboard():
     st.title("Agent Dashboard")
     st.write("Welcome to your dashboard! Here you can manage your profile, view listings, and interact with clients.")
     agent_summary_profile()
-    
-    user_id = st.session_state.get("user_id", None)
-    
+        
     if st.sidebar.button("Search Renters", key="search_renters_button"):
         st.session_state["current_page"] = "search_renters"
+        st.rerun()
     
     if st.sidebar.button("Manage Listings", key="listing_button"):
         st.session_state["current_page"] = "listing"
+        st.rerun()
             
                             
     if st.sidebar.button("Manage Client Reviews", key="client_reviews_button"):
-                    st.session_state["current_page"] = "client_reviews"
+        st.session_state["current_page"] = "client_reviews"
+        st.rerun()
+                    
+
+# Landlord dashboard
+
+def landlord_dashboard():
+    st.title("Landlord Dashboard")
+    st.write("Welcome to your dashboard! Here you can manage your profile, view your properties, and interact with tenants.")
+    landlord_summary_profile()
+        
+    if st.sidebar.button("Search Tenants", key="search_tenants_button"):
+        st.session_state["current_page"] = "search_tenants"
+        st.rerun()
+    
+    if st.sidebar.button("Manage Listings", key="listing_button"):
+        st.session_state["current_page"] = "listing"
+        st.rerun()
+                            
+    if st.sidebar.button("Manage Tenant Reviews", key="tenant_reviews_button"):
+        st.session_state["current_page"] = "tenant_reviews"
+        st.rerun()
             
 def dashboard():
     # Ensure session state is initialized
@@ -95,31 +111,33 @@ def dashboard():
                     st.session_state["logout_confirmation"] = False
                 
     # Load the user's roles
-    roles = get_user_roles(st.session_state.get("user_id", None))
+    user_id = st.session_state.get("user_id", None)
     
-    if not roles:
-        st.error("No roles found for the user. Please contact support.")
-        return
+    roles = get_user_roles(user_id)
 
-    # Ensure the session state role is valid
-    if st.session_state["role"] not in roles:
-        st.warning("Your current role is invalid. Selecting the first available role.")
-        st.session_state["role"] = roles[0]
-    
-    if len(roles) > 1:
+    if len(roles) == 0:
+        st.error("You do not have any roles assigned to your account. Please contact support.")
+        return
+    elif len(roles) == 1:
+        role = roles[0]
+        
+    elif len(roles) > 1:
         selected_role = st.selectbox("#### **Select Role**", roles, key="role_selectbox",
-                                     index=roles.index(st.session_state["role"]))
-        st.session_state["role"] = selected_role
-    else:
-        st.session_state["role"] = roles[0]
+                                     index=roles.index(roles[0]))
+        role = selected_role
                 
-    role = st.session_state["role"]
     if role == "Renter":
+        # save session state for the current role
+        st.session_state["role"] = role
         renter_dashboard()
+        
     elif role == "Landlord":
-        st.write("Landlord Dashboard")
+        st.session_state["role"] = role
+        landlord_dashboard()
+        
         # landlord_dashboard()
     elif role == "Agent":
+        st.session_state["role"] = role
         agent_dashboard()
 
 if __name__ == "__main__":

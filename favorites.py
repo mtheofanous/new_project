@@ -1,5 +1,5 @@
 import streamlit as st
-from navigation_buttons import home_button, back_button
+from navigation_buttons import back_button
 from queries.queries_favorites import *
 
 # display the user's favorites

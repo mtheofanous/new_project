@@ -18,6 +18,8 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
+        first_name TEXT DEFAULT NULL,
+        last_name TEXT DEFAULT NULL,
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -52,8 +54,6 @@ def create_tables():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL UNIQUE,
         profile_pic BLOB,
-        first_name TEXT DEFAULT NULL,
-        last_name TEXT DEFAULT NULL,
         tagline TEXT DEFAULT NULL,
         age INTEGER CHECK (age >= 18) DEFAULT 18,
         phone TEXT CHECK (phone GLOB '+[0-9]*' OR (phone GLOB '[0-9]*' AND length(phone) = 10)), 
@@ -82,8 +82,6 @@ def create_tables():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL UNIQUE,
         agent_profile_pic BLOB DEFAULT NULL,
-        first_name TEXT DEFAULT NULL,
-        last_name TEXT DEFAULT NULL,
         phone TEXT CHECK (phone GLOB '+[0-9]*' OR (phone GLOB '[0-9]*' AND length(phone) = 10)),
         agency_name TEXT DEFAULT NULL,
         agency_address TEXT DEFAULT NULL,
@@ -106,6 +104,22 @@ def create_tables():
     CREATE UNIQUE INDEX IF NOT EXISTS unique_user_id ON agent_profiles (user_id);
     """)
     
+#   Landlord Profiles Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS landlord_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL UNIQUE,
+        profile_pic BLOB DEFAULT NULL,
+        phone TEXT CHECK (phone GLOB '+[0-9]*' OR (phone GLOB '[0-9]*' AND length(phone) = 10)),
+        social_media TEXT DEFAULT NULL,
+        preferred_communication TEXT DEFAULT NULL,
+        languages TEXT DEFAULT NULL,
+        about_me TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    """)
     
 # property interest table       
     cursor.execute("""

@@ -1,5 +1,5 @@
 import streamlit as st
-from database import save_property_interest, delete_property_interest, has_expressed_interest
+from queries.property import save_property_interest, delete_property_interest, has_expressed_interest
 from queries.queries_favorites import *
 # Display properties
 def renter_display_property(property):

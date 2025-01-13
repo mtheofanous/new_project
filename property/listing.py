@@ -1,9 +1,8 @@
 import streamlit as st
-from navigation_buttons import home_button, back_button, log_out_button
+from navigation_buttons import back_button
 from app.components.utils import scrape_data_to_dict
-from database import * 
-from db_setup import get_db_connection
-from agent.display_property import display_property
+from queries.property import *
+from property.display_property import display_property
 import base64
 from time import sleep
 
@@ -112,8 +111,8 @@ def listing():
                                         # save images
                                         save_property_image_to_db(property_id, user_id, images)
                                         
-                                        if 'role' not in st.session_state:
-                                            st.session_state["role"] = "agent"
+                                        # if 'role' not in st.session_state:
+                                        #     st.session_state["role"] = "agent"
                                         
                                         role = st.session_state.get("role")
                                         if role:
@@ -192,8 +191,8 @@ def listing():
                 
                 save_property_image_to_db(property_id, user_id, images)
                 
-                if 'role' not in st.session_state:
-                    st.session_state["role"] = "agent"
+                # if 'role' not in st.session_state:
+                #     st.session_state["role"] = "agent"
                 
                 role = st.session_state.get("role")
                 if role:
@@ -213,10 +212,10 @@ def listing():
 
     # Header for Property Listing
     st.header("Property Listing")
-    columnas_values = ["**NICKNAME**", "**TYPE**", "**LOCATION**", "**PRICE**", "**SIZE**", "**BEDROOMS**",
-                       "**BATHROOMS**", "**FLOOR**", "**YEAR BUILT**", "**CONDITION**", 
-                       "**RENOVATION**", "**ENERGY CLASS**", "**AVAILABILITY**", "**FROM**", 
-                       "**HEATING**", "**ZONE**"]
+    columnas_values = ["**🏷️**", "**🏠**", "**📍**", "**€**", "**📐**", "**🛏️**",
+                       "** 🛁 **", "**FLOOR**", "**YEAR BUILT**", "**CONDITION**", 
+                       "**🛠️**", "**♻️ **", "**AVAILABILITY**", "**📅**", 
+                       "**🔥**", "**ZONE**"]
     columnas = st.columns(len(columnas_values) + 3)
     for col, value in zip(columnas, columnas_values):
         col.write(value)

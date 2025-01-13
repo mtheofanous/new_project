@@ -1,5 +1,5 @@
 import streamlit as st
-from database import get_users_for_similar_properties
+from queries.property import get_users_for_similar_properties
 
 def back_button():
     if st.button("Back", key="back_button"):
@@ -34,7 +34,7 @@ def renter_preview_property(property):
     columns = st.columns([1, 2, 5])
     
     with columns[0]:
-        st.write(f"**Friendly Name:** {property['friendly_name']}")
+        st.write(f"**Title:** {property['friendly_name']}")
         st.write(f"**Property Type:** {property['property_type']}")
         st.write(f"**Location:** {property['property_location']}")
         st.write(f"**Price:** €{property['property_price']} per month")

@@ -1,6 +1,6 @@
 import streamlit as st
 from navigation_buttons import home_button, back_button, log_out_button
-from database import save_user_to_db, load_user_from_db, update_email, update_username, update_user_password
+from queries.user import save_user_to_db, load_user_from_db, update_email, update_username, update_user_password
 from roles import assign_role_to_user, get_user_roles, remove_role_from_user
 from app.components.utils import verify_password, hash_password, authenticate_user, update_user_password, delete_user_account
 

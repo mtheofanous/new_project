@@ -1,14 +1,11 @@
 import streamlit as st
 from app.components.utils import authenticate_user, add_user  # Updated import path to match utils.py location
 from navigation_buttons import home_button
-from database import save_user_to_db 
-from database import (
-    load_user_from_db,
-    load_renter_profile_from_db,
-    load_rental_preferences_from_db,
-    load_credit_scores,
-    load_agent_profile_from_db
-)
+from queries.user import save_user_to_db, load_user_from_db
+from queries.renter import load_renter_profile_from_db, load_rental_preferences_from_db, load_credit_scores
+from queries.agent import load_agent_profile_from_db
+from queries.landlord import load_landlord_profile_from_db
+from queries.property import load_properties_by_user
 from app.components.utils import verify_password  # Import the password verification function
 from roles import assign_role_to_user, get_user_roles
 
@@ -18,14 +15,11 @@ def login_form():
     # Back to Home Button
     home_button()
     
-    
     st.title("Log In")
-    
     
     email = st.text_input("Email", key="login_email")
     password = st.text_input("Password", type="password", key="login_password")
     
-
     if st.button("Log In", key="login_button"):
         
         try:
@@ -51,48 +45,68 @@ def login_form():
             st.session_state["logged_in"] = True
             st.session_state["user_id"] = user["id"]
             st.session_state["user"] = user["username"]
+            st.session_state["first_name"] = user["first_name"]
+            st.session_state["last_name"] = user["last_name"]
             st.session_state["email"] = user["email"]
 
             if roles[0] == "Renter":
                 
                 st.session_state["user_id"] = user["id"]
                 st.session_state["user"] = user["username"]
+                st.session_state["first_name"] = user["first_name"]
+                st.session_state["last_name"] = user["last_name"]
                 st.session_state["role"] = roles
                 st.session_state["email"] = user["email"]
                 
                 profile = load_renter_profile_from_db(user["id"])
+                credit_score = load_credit_scores(user["id"])
                 if profile:
                     st.session_state["renter_profile"] = profile
+                if credit_score:
+                    st.session_state["credit_score"] = credit_score
 
                 preferences = load_rental_preferences_from_db(profile_id=profile["id"])
                 if preferences:
                     st.session_state["rental_preferences"] = preferences
 
-                credit_score_status = load_credit_scores(user["id"])
-                if credit_score_status:
-                    st.session_state["status"] = credit_score_status["status"]
-
                 st.session_state["current_page"] = "dashboard"
                 st.rerun()
 
             elif roles[0] == "Landlord":
-                st.session_state["current_page"] = "dashboard"
                 
                 st.session_state["user_id"] = user["id"]
                 st.session_state["user"] = user["username"]
+                st.session_state["first_name"] = user["first_name"]
+                st.session_state["last_name"] = user["last_name"]
                 st.session_state["role"] = roles
                 st.session_state["email"] = user["email"]
+                
+                profile = load_landlord_profile_from_db(user["id"])
+                properties = load_properties_by_user(user["id"], role=roles[0])
+                if profile:
+                    st.session_state["landlord_profile"] = profile
+                if properties:
+                    st.session_state["properties"] = properties
+                
+                st.session_state["current_page"] = "dashboard"
+                st.rerun()
 
             elif roles[0] == "Agent":
                 
                 st.session_state["user_id"] = user["id"]
                 st.session_state["user"] = user["username"]
+                st.session_state["first_name"] = user["first_name"]
+                st.session_state["last_name"] = user["last_name"]
                 st.session_state["role"] = roles
                 st.session_state["email"] = user["email"]
                 
                 profile = load_agent_profile_from_db(user["id"])
+                properties = load_properties_by_user(user["id"], role=roles[0])
+                
                 if profile:
                     st.session_state["agent_profile"] = profile
+                if properties:
+                    st.session_state["properties"] = properties
                 
                 st.session_state["current_page"] = "dashboard"
                 st.rerun()
@@ -108,6 +122,8 @@ def signup_form():
     
     st.title("Sign Up")
     username = st.text_input("Username", key="signup_username")
+    first_name = st.text_input("First Name", key="signup_first_name")
+    last_name = st.text_input("Last Name", key="signup_last_name")
     email = st.text_input("Email", key="signup_email")
     password = st.text_input("Password", type="password", key="signup_password")
     confirm_password = st.text_input("Confirm Password", type="password", key="signup_confirm_password")
@@ -127,7 +143,7 @@ def signup_form():
         else:
             try:
                 # Save the user to the database
-                user_id = save_user_to_db(username, email, password)
+                user_id = save_user_to_db(username, first_name, last_name, email, password)
                 
                 # assign the selected role to the user
                 assign_role_to_user(user_id, role)
@@ -136,6 +152,8 @@ def signup_form():
                 st.session_state["signed_up"] = True
                 st.session_state["user_id"] = user_id
                 st.session_state["user"] = username
+                st.session_state["first_name"] = first_name
+                st.session_state["last_name"] = last_name
                 st.session_state["email"] = email
                 st.session_state["role"] = role
                 st.session_state["logged_in"] = True

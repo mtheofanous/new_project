@@ -1,9 +1,6 @@
 import streamlit as st
-from database import save_credit_score
 from navigation_buttons import back_button 
-
-import streamlit as st
-from database import save_credit_score, delete_credit_score, load_credit_scores
+from queries.renter import *
 
 def credit_score():
     back_button()

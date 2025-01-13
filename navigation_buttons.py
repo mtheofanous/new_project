@@ -13,6 +13,8 @@ def log_out_button():
         st.rerun()
 
 def back_button():
+    """Back to dashboard button.
+    """
     if st.button("Back", key="back_button"):
         st.session_state["current_page"] = st.session_state.get("previous_page", "dashboard")
         st.rerun()

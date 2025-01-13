@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
-from navigation_buttons import home_button, back_button
-from database import save_rental_preferences_to_db
+from navigation_buttons import back_button
+from queries.renter import save_rental_preferences_to_db
  
 def rental_preferences():
     

@@ -1,12 +1,17 @@
 import streamlit as st
 from navigation_buttons import back_button
+from queries.user import load_user_from_db
+from queries.agent import load_agent_profile_from_db
 
 def agent_full_profile():
     
     back_button()
     
-    agent_profile = st.session_state["agent_profile"]
+    user_id = st.session_state.get("user_id", None)
     
+    user = load_user_from_db(user_id)
+    
+    agent_profile = load_agent_profile_from_db(user_id)
     st.title("Agent Profile")
     
     st.markdown("---")
@@ -17,8 +22,8 @@ def agent_full_profile():
     with col1:
         if agent_profile["agent_profile_pic"]:
             st.image(agent_profile["agent_profile_pic"], width=200)
-        st.markdown(f"##### **First Name:** {agent_profile['first_name']}")
-        st.markdown(f"##### **Last Name:** {agent_profile['last_name']}")
+        st.markdown(f"##### **First Name:** {user['first_name']}")
+        st.markdown(f"##### **Last Name:** {user['last_name']}")
         st.markdown(f"##### **Phone:** {agent_profile['phone']}")
         st.markdown(f"##### **Agency Name:** {agent_profile['agency_name']}")
         st.markdown(f"##### **Agency Address:** {agent_profile['agency_address']}")

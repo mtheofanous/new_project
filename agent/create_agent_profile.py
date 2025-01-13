@@ -1,7 +1,7 @@
 import streamlit as st
 from navigation_buttons import home_button 
 import overpy
-from database import load_user_from_db, save_agent_profile_to_db
+from queries.agent import save_agent_profile_to_db
 
 def create_agent_profile():
     home_button()
@@ -11,8 +11,6 @@ def create_agent_profile():
     # Collect agent's basic profile information
     with st.expander("Basic Information"):
         agent_profile_pic = st.file_uploader("Upload Profile Picture", type=["jpg", "jpeg", "png"], key="create_agent_profile_pic")
-        first_name = st.text_input("First Name:")
-        last_name = st.text_input("Last Name:")
         agency_name = st.text_input("Agency Name:")
         phone = st.text_input("Phone Number:")
         
@@ -41,8 +39,8 @@ def create_agent_profile():
     if st.button("Save Profile"):
         
         # Mandatory field validation
-        if not first_name or not last_name or not agency_name or not phone:
-            st.error("Full Name, Agency Name, and Phone Number are required fields.")
+        if not agency_name or not phone:
+            st.error("Agency Name, and Phone Number are required fields.")
             return
         
         # Profile picture size validation
@@ -52,8 +50,6 @@ def create_agent_profile():
         
         # Build the profile dictionary
         agent_profile = {
-            "first_name": first_name,
-            "last_name": last_name,
             "phone": phone,
             "agent_profile_pic": agent_profile_pic.read() if agent_profile_pic else None,
             "agency_name": agency_name,

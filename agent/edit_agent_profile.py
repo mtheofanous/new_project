@@ -1,6 +1,6 @@
 import streamlit as st
 from navigation_buttons import back_button
-from database import load_agent_profile_from_db, save_agent_profile_to_db
+from queries.agent import save_agent_profile_to_db
 
 def edit_agent_profile():
     
@@ -18,8 +18,6 @@ def edit_agent_profile():
         
     # Basic Information
     with st.expander("Basic Information"):
-        first_name = st.text_input("First Name", value=agent_profile["first_name"])
-        last_name = st.text_input("Last Name", value=agent_profile["last_name"])
         phone = st.text_input("Phone Number", value=agent_profile["phone"])
         
         if phone and (not phone.isdigit() or len(phone) not in (10, 12)):
@@ -54,8 +52,6 @@ def edit_agent_profile():
             
             updated_profile_data = {
                 "agent_profile_pic": agent_profile_pic_data,
-                "first_name": first_name,
-                "last_name": last_name,
                 "phone": phone,
                 "agency_name": agency_name,
                 "agency_address": agency_address,

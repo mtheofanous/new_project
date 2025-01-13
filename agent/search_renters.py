@@ -1,170 +1,86 @@
 import streamlit as st
-import sqlite3
 from navigation_buttons import back_button
-from db_setup import get_db_connection
-
-import streamlit as st
-import sqlite3
-
-import streamlit as st
-import sqlite3
-
-def get_db_connection():
-    """Create and return a connection to the SQLite database."""
-    conn = sqlite3.connect("database.db")
-    conn.row_factory = sqlite3.Row  # Enable accessing columns by name
-    return conn
+from queries.renter import get_all_renter_user_ids
+from renter.renter_full_profile import display_renter_full_profile
+from renter.renter_summary_profile import display_renter_summary_profile
 
 def search_renters():
     
     back_button()
+    
+    """
+    Allow agents to search renters using filters and display their full profiles,
+    with an option to clear filters and view all renters.
+    """
+
+    # Page header
     st.title("Search Renters")
+    st.markdown("Use the filters below to search for renters or clear filters to view all renters.")
 
     # Search filters
     st.sidebar.header("Filter Renters")
-
-    # Filters for Renter Profiles Table
-    st.sidebar.subheader("Renter Profiles")
-    min_age = st.sidebar.number_input("Minimum Age", min_value=18, step=1)
+    min_age = st.sidebar.number_input("Minimum Age", min_value=18, step=1, value=18)
     max_age = st.sidebar.number_input("Maximum Age", min_value=18, step=1)
     nationality = st.sidebar.text_input("Nationality")
-    contract_type = st.sidebar.text_input("Contract Type")
-    min_income = st.sidebar.number_input("Minimum Income", min_value=0.0, step=1000.0)
-    max_income = st.sidebar.number_input("Maximum Income", min_value=0.0, step=1000.0)
-    work_mode = st.sidebar.text_input("Work Mode")
-
-    # Filters for Rental Preferences Table
-    st.sidebar.subheader("Rental Preferences")
+    min_income = st.sidebar.number_input("Minimum Income (€)", min_value=0.0, step=1000.0, value=0.0)
+    max_income = st.sidebar.number_input("Maximum Income (€)", min_value=0.0, step=1000.0)
     preferred_city = st.sidebar.text_input("Preferred City")
     preferred_area = st.sidebar.text_input("Preferred Area")
-    budget_min = st.sidebar.number_input("Minimum Budget (€)", min_value=0.0, step=50.0)
-    budget_max = st.sidebar.number_input("Maximum Budget (€)", min_value=0.0, step=50.0)
-    property_type = st.sidebar.selectbox("Property Type", ["Any", "Apartment", "House", "Studio", "Shared Room"])
-    rooms_needed = st.sidebar.number_input("Rooms Needed", min_value=0, step=1)
-    number_of_people = st.sidebar.number_input("Number of People", min_value=1, step=1)
-    move_in_date = st.sidebar.date_input("Move-in Date")
+    budget_min = st.sidebar.number_input("Minimum Budget (€)", min_value=0.0, step=100.0, value=0.0)
+    budget_max = st.sidebar.number_input("Maximum Budget (€)", min_value=0.0, step=100.0)
     pets = st.sidebar.selectbox("Pets", ["Any", "Yes", "No"])
-    lease_duration = st.sidebar.selectbox("Lease Duration", ["Any", "Short-Term", "Long-Term"])
 
-    # Filters for Credit Score
-    st.sidebar.subheader("Additional Filters")
-    credit_score_status = st.sidebar.selectbox("Credit Score Status", ["Any", "Verified", "Not Verified", "Pending"])
-
-    # Submit button
+    # Buttons: Search and Clear Filters
+    filter_options = {}
     if st.sidebar.button("Search"):
-        query = """
-        SELECT rp.*, rpfs.*, rcs.status AS credit_score_status
-        FROM renter_profiles rp
-        JOIN rental_preferences rpfs ON rp.id = rpfs.profile_id
-        LEFT JOIN renter_credit_scores rcs ON rp.user_id = rcs.user_id
-        WHERE 1=1
-        """
-        params = []
+        filter_options = {
+            "min_age": min_age,
+            "max_age": max_age,
+            "nationality": nationality,
+            "min_income": min_income,
+            "max_income": max_income,
+            "preferred_city": preferred_city,
+            "preferred_area": preferred_area,
+            "budget_min": budget_min,
+            "budget_max": budget_max,
+            "pets": pets if pets != "Any" else None,
+        }
 
-        # Filters for Renter Profiles
-        if min_age:
-            query += " AND rp.age >= ?"
-            params.append(min_age)
-        if max_age:
-            query += " AND rp.age <= ?"
-            params.append(max_age)
-        if nationality:
-            query += " AND rp.nationality LIKE ?"
-            params.append(f"%{nationality}%")
-        if contract_type:
-            query += " AND rp.contract_type LIKE ?"
-            params.append(f"%{contract_type}%")
-        if min_income:
-            query += " AND rp.income >= ?"
-            params.append(min_income)
-        if max_income:
-            query += " AND rp.income <= ?"
-            params.append(max_income)
-        if work_mode:
-            query += " AND rp.work_mode LIKE ?"
-            params.append(f"%{work_mode}%")
+    if st.sidebar.button("Clear Filters"):
+        filter_options = {}  # Clear all filter criteria
 
-        # Filters for Rental Preferences
-        if preferred_city:
-            query += " AND rpfs.preferred_city LIKE ?"
-            params.append(f"%{preferred_city}%")
-        if preferred_area:
-            query += " AND rpfs.preferred_area LIKE ?"
-            params.append(f"%{preferred_area}%")
-        if budget_min:
-            query += " AND rpfs.budget_min >= ?"
-            params.append(budget_min)
-        if budget_max:
-            query += " AND rpfs.budget_max <= ?"
-            params.append(budget_max)
-        if property_type and property_type != "Any":
-            query += " AND rpfs.property_type = ?"
-            params.append(property_type)
-        if rooms_needed:
-            query += " AND rpfs.rooms_needed >= ?"
-            params.append(rooms_needed)
-        if number_of_people:
-            query += " AND rpfs.number_of_people >= ?"
-            params.append(number_of_people)
-        if move_in_date:
-            query += " AND rpfs.move_in_date >= ?"
-            params.append(move_in_date)
-        if pets and pets != "Any":
-            query += " AND rpfs.pets = ?"
-            params.append(1 if pets == "Yes" else 0)
-        if lease_duration and lease_duration != "Any":
-            query += " AND rpfs.lease_duration = ?"
-            params.append(lease_duration)
-
-        # Filters for Credit Score
-        if credit_score_status and credit_score_status != "Any":
-            query += " AND rcs.status = ?"
-            params.append(credit_score_status)
-
-        # Execute the query
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(query, params)
-        renters = cursor.fetchall()
-        conn.close()
-
-        # Display results
-        # Display results
-        if renters:
-            st.write(f"Found {len(renters)} renter(s):")
-            for renter in renters:
-                st.write(f"Name: {renter['first_name']} {renter['surname']}")
-                st.write(f"Credit Score Status: {renter['credit_score_status']}")
+    # Fetch renters based on filter options (or fetch all if no filters)
+    # renters = find_matching_renters_dict(filter_options) if filter_options else find_matching_renters_dict({})
+    renters = get_all_renter_user_ids()
+    
+    
+    
+    if not renters:
+        st.warning("No renters found in the database.")
+        return
+    else:
+        st.success(f"Found {len(renters)} renter(s).")
+        num = 1
+        for index, renter in enumerate(renters):
+            with st.container(border=True):
+                toggle_key = f"renter_full_profile_{index}_{num}"
+                if toggle_key not in st.session_state:
+                    st.session_state[toggle_key] = False
+                    
+                if st.button("View Full Profile", key=f'{toggle_key}_button_{num}'):
+                    # Toggle the display of the full profile
+                    st.session_state[toggle_key] = not st.session_state[toggle_key]
+                    num += 1
+                    
+                if st.session_state[toggle_key]:
+                    display_renter_full_profile(renter)
+                    
+                num += 1
                 
-                with st.expander(f"View Profile: {renter['first_name']} {renter['surname']}"):
-                    st.image(renter["profile_pic"], caption="Profile Picture", width=150)
-                    st.markdown(
-                        f"""
-                        <div style="background-color: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);">
-                            <h3 style="color: #2C3E50; margin-bottom: 15px;">{renter['first_name']} {renter['surname']}</h3>
-                            <p><strong>Age:</strong> {renter['age']} years</p>
-                            <p><strong>Nationality:</strong> {renter['nationality']}</p>
-                            <p><strong>Contract Type:</strong> {renter['contract_type']}</p>
-                            <p><strong>Income:</strong> €{renter['income']}</p>
-                            <p><strong>Work Mode:</strong> {renter['work_mode']}</p>
-                            <p><strong>Preferred City:</strong> {renter['preferred_city']}</p>
-                            <p><strong>Preferred Area:</strong> {renter['preferred_area']}</p>
-                            <p><strong>Budget Range:</strong> €{renter['budget_min']} - €{renter['budget_max']}</p>
-                            <p><strong>Property Type:</strong> {renter['property_type']}</p>
-                            <p><strong>Rooms Needed:</strong> {renter['rooms_needed']}</p>
-                            <p><strong>Number of People:</strong> {renter['number_of_people']}</p>
-                            <p><strong>Move-in Date:</strong> {renter['move_in_date']}</p>
-                            <p><strong>Pets Allowed:</strong> {renter['pets']}</p>
-                            <p><strong>Lease Duration:</strong> {renter['lease_duration']}</p>
-                            <p><strong>Credit Score Status:</strong> {renter['credit_score_status']}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                st.write("---")
-                            
-        else:
-            st.warning("No renters found with the specified filters.")
-
+                display_renter_summary_profile(renter)
+   
+# Main Function to Load the Page
 if __name__ == "__main__":
     search_renters()
+
+

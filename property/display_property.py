@@ -1,6 +1,5 @@
 import streamlit as st
-from database import delete_property_from_db
-from agent.preview_property import preview_property
+from queries.property import delete_property_from_db
 
 # Display properties
 def display_property(property):

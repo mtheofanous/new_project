@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
 from navigation_buttons import home_button, back_button
-from database import update_rental_preferences
+from queries.renter import update_rental_preferences
 from queries.filters import find_matching_properties_dict
 from renter.renter_display_property import renter_display_property
 # initialize session state rental_preferences
@@ -12,7 +12,7 @@ def search_properties():
     
     back_button()
     
-    rental_preferences = st.session_state.get("rental_preferences")
+    rental_preferences = st.session_state.get("rental_preferences") if "rental_preferences" in st.session_state else {}
     
     user_id = st.session_state.get("user_id")
     

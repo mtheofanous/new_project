@@ -1,15 +1,17 @@
 import streamlit as st
 import uuid
-from navigation_buttons import home_button, back_button 
-from renter.rental_preferences import rental_preferences
-from database import save_renter_profile_to_db, save_rental_preferences_to_db
+from navigation_buttons import back_button 
+from queries.renter import save_renter_profile_to_db
 
 def edit_renter_profile():
+    
     back_button()
     
     renter_profile = st.session_state["renter_profile"]
-    # preferences_data = st.session_state["rental_preferences"]
 
+    user_id = st.session_state.get("user_id", None)
+    
+    
     st.title("Edit Your Renter Profile")
 
     # Profile Header
@@ -21,8 +23,6 @@ def edit_renter_profile():
     if profile_pic:
         st.image(profile_pic, caption="Current Renter Profile Picture", width=150)
 
-    first_name = st.text_input("First Name", value=renter_profile["first_name"], key="new_profile_first_name")
-    surname = st.text_input("Surname", value=renter_profile["surname"], key="new_profile_name")
     tagline = st.text_input("Tagline", value=renter_profile["tagline"], key="new_profile_tagline")
 
     # Personal Details
@@ -63,8 +63,6 @@ def edit_renter_profile():
             # Collect updated profile data
             updated_profile_data = {
                 "profile_pic": renter_profile_pic_data,
-                "first_name": first_name,
-                "surname": surname,
                 "tagline": tagline,
                 "age": age,
                 "phone": phone,
@@ -92,3 +90,6 @@ def edit_renter_profile():
         except Exception as e:
             st.error("An error occurred while updating your profile.")
             print(f"Error: {e}")
+
+if __name__ == "__main__":
+    edit_renter_profile()

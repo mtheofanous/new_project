@@ -1,5 +1,5 @@
 import streamlit as st
-from database import *
+from queries.property import *
 def back_button():
     if st.button("Back", key="back_button"):
         st.session_state["current_page"] = st.session_state.get("previous_page", "listing")
